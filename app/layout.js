@@ -15,3 +15,13 @@ export default function RootLayout({ children }) {
     </html>
   )
 }
+import ModernFooter from "../components/ModernFooter";
+
+export default function App({ Component, pageProps }) {
+  return (
+    <>
+      <Component {...pageProps} />
+      <ModernFooter />
+    </>
+  );
+}
