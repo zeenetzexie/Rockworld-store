@@ -1127,6 +1127,393 @@ export default function StorePage() {
           </div>
         </>
       )}
+
+      {/* Premium Modern Footer */}
+      <footer style={{
+        background: 'linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%)',
+        color: 'white',
+        marginTop: '100px',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Subtle background pattern */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.03) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.02) 0%, transparent 50%)',
+          pointerEvents: 'none'
+        }}/>
+        
+        <div style={{
+          maxWidth: '1400px',
+          margin: '0 auto',
+          padding: '80px 40px 40px',
+          position: 'relative',
+          zIndex: 1
+        }}>
+          {/* Main Footer Content */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: '60px',
+            marginBottom: '60px'
+          }}>
+            {/* Brand Column */}
+            <div>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '15px',
+                marginBottom: '25px'
+              }}>
+                <img 
+                  src="/logo.png" 
+                  alt="ROCKWORLD" 
+                  style={{
+                    width: '45px',
+                    height: '45px',
+                    objectFit: 'contain',
+                    filter: 'brightness(0) invert(1)'
+                  }}
+                />
+                <span style={{
+                  fontSize: '26px',
+                  fontWeight: '700',
+                  letterSpacing: '3px',
+                  fontFamily: '"Archivo", sans-serif'
+                }}>
+                  ROCKWORLD
+                </span>
+              </div>
+              <p style={{
+                fontSize: '15px',
+                lineHeight: '1.8',
+                color: 'rgba(255,255,255,0.7)',
+                marginBottom: '25px'
+              }}>
+                Premium print-on-demand products crafted with precision and delivered worldwide.
+              </p>
+              {/* Social Links */}
+              <div style={{
+                display: 'flex',
+                gap: '15px'
+              }}>
+                <a
+                  href="https://www.facebook.com/1887WAB4bx/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.08)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.3s',
+                    textDecoration: 'none',
+                    color: 'white',
+                    fontSize: '18px',
+                    border: '1px solid rgba(255,255,255,0.1)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'white';
+                    e.currentTarget.style.color = 'black';
+                    e.currentTarget.style.transform = 'translateY(-3px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                    e.currentTarget.style.color = 'white';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                  title="Facebook"
+                >
+                  F
+                </a>
+                <a
+                  href="mailto:rockworldsrote@outlook.com"
+                  style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.08)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.3s',
+                    textDecoration: 'none',
+                    color: 'white',
+                    fontSize: '18px',
+                    border: '1px solid rgba(255,255,255,0.1)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'white';
+                    e.currentTarget.style.color = 'black';
+                    e.currentTarget.style.transform = 'translateY(-3px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                    e.currentTarget.style.color = 'white';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                  title="Email Us"
+                >
+                  @
+                </a>
+                <a
+                  href="tel:+260975473982"
+                  style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.08)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.3s',
+                    textDecoration: 'none',
+                    color: 'white',
+                    fontSize: '18px',
+                    border: '1px solid rgba(255,255,255,0.1)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'white';
+                    e.currentTarget.style.color = 'black';
+                    e.currentTarget.style.transform = 'translateY(-3px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                    e.currentTarget.style.color = 'white';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                  title="Call Us"
+                >
+                  ☎
+                </a>
+              </div>
+            </div>
+
+            {/* Quick Links */}
+            <div>
+              <h3 style={{
+                fontSize: '16px',
+                fontWeight: '700',
+                letterSpacing: '2px',
+                textTransform: 'uppercase',
+                marginBottom: '25px',
+                color: 'white'
+              }}>
+                Quick Links
+              </h3>
+              <ul style={{
+                listStyle: 'none',
+                padding: 0,
+                margin: 0
+              }}>
+                {[
+                  { name: 'Shop All', href: '/' },
+                  { name: 'About Us', href: '/about' },
+                  { name: 'Contact', href: '/contact' },
+                  { name: 'Order Now', href: '/order' }
+                ].map((link) => (
+                  <li key={link.name} style={{ marginBottom: '15px' }}>
+                    <a
+                      href={link.href}
+                      style={{
+                        color: 'rgba(255,255,255,0.7)',
+                        textDecoration: 'none',
+                        fontSize: '15px',
+                        transition: 'all 0.3s',
+                        display: 'inline-block',
+                        position: 'relative'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = 'white';
+                        e.currentTarget.style.paddingLeft = '8px';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                        e.currentTarget.style.paddingLeft = '0';
+                      }}
+                    >
+                      {link.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Customer Service */}
+            <div>
+              <h3 style={{
+                fontSize: '16px',
+                fontWeight: '700',
+                letterSpacing: '2px',
+                textTransform: 'uppercase',
+                marginBottom: '25px',
+                color: 'white'
+              }}>
+                Support
+              </h3>
+              <ul style={{
+                listStyle: 'none',
+                padding: 0,
+                margin: 0
+              }}>
+                {[
+                  'Shipping Info',
+                  'Returns',
+                  'FAQ',
+                  'Size Guide',
+                  'Track Order'
+                ].map((item) => (
+                  <li key={item} style={{ marginBottom: '15px' }}>
+                    <a
+                      href="#"
+                      style={{
+                        color: 'rgba(255,255,255,0.7)',
+                        textDecoration: 'none',
+                        fontSize: '15px',
+                        transition: 'all 0.3s',
+                        display: 'inline-block'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = 'white';
+                        e.currentTarget.style.paddingLeft = '8px';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                        e.currentTarget.style.paddingLeft = '0';
+                      }}
+                    >
+                      {item}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Newsletter */}
+            <div>
+              <h3 style={{
+                fontSize: '16px',
+                fontWeight: '700',
+                letterSpacing: '2px',
+                textTransform: 'uppercase',
+                marginBottom: '25px',
+                color: 'white'
+              }}>
+                Stay Updated
+              </h3>
+              <p style={{
+                fontSize: '14px',
+                lineHeight: '1.6',
+                color: 'rgba(255,255,255,0.7)',
+                marginBottom: '20px'
+              }}>
+                Subscribe to get special offers, free giveaways, and updates.
+              </p>
+              <div style={{
+                display: 'flex',
+                gap: '10px'
+              }}>
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  style={{
+                    flex: 1,
+                    padding: '14px 18px',
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    borderRadius: '8px',
+                    color: 'white',
+                    fontSize: '14px',
+                    outline: 'none',
+                    transition: 'all 0.3s'
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
+                  }}
+                />
+                <button
+                  style={{
+                    padding: '14px 24px',
+                    background: 'white',
+                    color: 'black',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s',
+                    letterSpacing: '0.5px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 8px 20px rgba(255,255,255,0.2)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                >
+                  Join
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div style={{
+            paddingTop: '30px',
+            borderTop: '1px solid rgba(255,255,255,0.1)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '20px'
+          }}>
+            <p style={{
+              fontSize: '14px',
+              color: 'rgba(255,255,255,0.5)',
+              margin: 0
+            }}>
+              © {new Date().getFullYear()} ROCKWORLD. All rights reserved.
+            </p>
+            
+            <div style={{
+              display: 'flex',
+              gap: '30px',
+              flexWrap: 'wrap'
+            }}>
+              {['Privacy Policy', 'Terms of Service', 'Cookies'].map((item) => (
+                <a
+                  key={item}
+                  href="#"
+                  style={{
+                    color: 'rgba(255,255,255,0.5)',
+                    textDecoration: 'none',
+                    fontSize: '14px',
+                    transition: 'color 0.3s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
+                >
+                  {item}
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
