@@ -135,14 +135,14 @@ export default function ContactPage() {
                   Email Us
                 </h3>
                 <a 
-                  href="mailto:rockworldsrote@outlook.com"
+                  href="mailto:rockworldstore@outlook.com"
                   style={{ 
                     color: '#666', 
                     fontSize: '16px',
                     textDecoration: 'none'
                   }}
                 >
-                  rockworldsrote@outlook.com
+                  rockworldstore@outlook.com
                 </a>
               </div>
 
@@ -187,7 +187,7 @@ export default function ContactPage() {
                   Follow Us
                 </h3>
                 <a 
-                  href="https://www.facebook.com/1887WAB4bx/"
+                  href="https://www.facebook.com/Zexienazarithe2nd/about/"
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ 

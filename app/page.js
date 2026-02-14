@@ -1202,7 +1202,7 @@ export default function StorePage() {
                 gap: '15px'
               }}>
                 <a
-                  href="https://www.facebook.com/1887WAB4bx/"
+                  href="https://www.facebook.com/Zexienazarithe2nd/about/"
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
@@ -1234,7 +1234,7 @@ export default function StorePage() {
                   F
                 </a>
                 <a
-                  href="mailto:rockworldsrote@outlook.com"
+                  href="mailto:rockworldstore@outlook.com"
                   style={{
                     width: '42px',
                     height: '42px',
