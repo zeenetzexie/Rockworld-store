@@ -171,9 +171,9 @@ export default function StorePage() {
             alignItems: 'center',
             gap: '20px'
           }}>
-            {/* ROCKWORLD Logo - User's actual image with transparent background */}
+            {/* ROCKWORLD Circular Logo - Clean version without black corners */}
             <img 
-              src="/logo.png" 
+              src="/logo-header.png" 
               alt="ROCKWORLD Logo" 
               style={{
                 width: '50px',

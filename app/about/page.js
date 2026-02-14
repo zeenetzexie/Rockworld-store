@@ -24,7 +24,7 @@ export default function AboutPage() {
           alignItems: 'center'
         }}>
           <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <img src="/logo.png" alt="ROCKWORLD" style={{ width: '50px', height: '50px', objectFit: 'contain' }} />
+            <img src="/logo-header.png" alt="ROCKWORLD" style={{ width: '50px', height: '50px', objectFit: 'contain' }} />
             <h1 style={{
               fontSize: '32px',
               fontFamily: '"Archivo", sans-serif',
