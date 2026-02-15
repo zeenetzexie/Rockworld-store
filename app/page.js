@@ -148,17 +148,76 @@ export default function StorePage() {
 
   return (
     <div style={{ minHeight: '100vh' }}>
+      <style>{`
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+          .header-container {
+            padding: 0 20px !important;
+          }
+          .header-logo {
+            width: 35px !important;
+            height: 35px !important;
+          }
+          .header-title {
+            font-size: 20px !important;
+            letter-spacing: 2px !important;
+          }
+          .header-gap {
+            gap: 12px !important;
+          }
+          .cart-button {
+            padding: 10px 18px !important;
+            font-size: 12px !important;
+          }
+          .hero-section {
+            padding: 60px 20px !important;
+          }
+          .hero-title {
+            font-size: 36px !important;
+            line-height: 1.2 !important;
+          }
+          .hero-text {
+            font-size: 16px !important;
+          }
+          .products-grid {
+            padding: 60px 20px !important;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+            gap: 30px !important;
+          }
+          .footer-grid {
+            grid-template-columns: 1fr !important;
+            gap: 40px !important;
+          }
+          .footer-container {
+            padding: 60px 20px 30px !important;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .header-title {
+            font-size: 18px !important;
+            letter-spacing: 1.5px !important;
+          }
+          .hero-title {
+            font-size: 28px !important;
+          }
+          .products-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
+      
       {/* Header */}
       <header style={{
         background: 'white',
         borderBottom: '1px solid #e0e0e0',
-        padding: '25px 0',
+        padding: '20px 0',
         position: 'sticky',
         top: 0,
         zIndex: 100,
         boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
       }}>
-        <div style={{
+        <div className="header-container" style={{
           maxWidth: '1400px',
           margin: '0 auto',
           padding: '0 40px',
@@ -166,13 +225,14 @@ export default function StorePage() {
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <div style={{
+          <div className="header-gap" style={{
             display: 'flex',
             alignItems: 'center',
             gap: '20px'
           }}>
             {/* ROCKWORLD Circular Logo - Clean version without black corners */}
             <img 
+              className="header-logo"
               src="/logo-header.png" 
               alt="ROCKWORLD Logo" 
               style={{
@@ -183,7 +243,7 @@ export default function StorePage() {
             />
             
             {/* ROCKWORLD Text with Metallic Embossed Effect */}
-            <svg width="300" height="60" viewBox="0 0 300 60" xmlns="http://www.w3.org/2000/svg">
+            <svg className="header-title" width="300" height="60" viewBox="0 0 300 60" xmlns="http://www.w3.org/2000/svg" style={{maxWidth: '100%', height: 'auto'}}>
               <defs>
                 <linearGradient id="textMetalGrad" x1="0%" y1="0%" x2="0%" y2="100%">
                   <stop offset="0%" style={{stopColor: '#4a4a4a', stopOpacity: 1}} />
@@ -268,6 +328,7 @@ export default function StorePage() {
           </div>
           
           <button
+            className="cart-button"
             onClick={() => setIsCartOpen(true)}
             style={{
               display: 'flex',
@@ -323,7 +384,7 @@ export default function StorePage() {
       </header>
 
       {/* Hero Section */}
-      <section style={{
+      <section className="hero-section" style={{
         background: 'linear-gradient(135deg, #1a2332 0%, #2c3e50 100%)',
         color: 'white',
         padding: '100px 40px',
@@ -346,7 +407,7 @@ export default function StorePage() {
           position: 'relative',
           zIndex: 1
         }}>
-          <h2 style={{
+          <h2 className="hero-title" style={{
             fontSize: '64px',
             fontFamily: '"Archivo", sans-serif',
             fontWeight: '700',
@@ -357,7 +418,7 @@ export default function StorePage() {
           }}>
             Exclusive Collections
           </h2>
-          <p style={{
+          <p className="hero-text" style={{
             fontSize: '20px',
             lineHeight: '1.8',
             opacity: 0.95,
@@ -373,7 +434,7 @@ export default function StorePage() {
       </section>
 
       {/* Products Grid */}
-      <section style={{
+      <section className="products-grid" style={{
         maxWidth: '1400px',
         margin: '0 auto',
         padding: '80px 40px'
@@ -1147,7 +1208,7 @@ export default function StorePage() {
           pointerEvents: 'none'
         }}/>
         
-        <div style={{
+        <div className="footer-container" style={{
           maxWidth: '1400px',
           margin: '0 auto',
           padding: '80px 40px 40px',
@@ -1155,7 +1216,7 @@ export default function StorePage() {
           zIndex: 1
         }}>
           {/* Main Footer Content */}
-          <div style={{
+          <div className="footer-grid" style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
             gap: '60px',
