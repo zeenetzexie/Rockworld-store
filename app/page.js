@@ -511,18 +511,12 @@ export default function StorePage() {
                 animation: `fadeIn 0.5s ease ${idx * 0.1}s both`
               }}
             >
-              <a 
-                href={`/product?id=${product.sync_product.id}`}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  paddingTop: '100%',
-                  position: 'relative',
-                  background: '#f5f5f5',
-                  cursor: 'pointer',
-                  textDecoration: 'none'
-                }}
-              >
+              <div style={{
+                width: '100%',
+                paddingTop: '100%',
+                position: 'relative',
+                background: '#f5f5f5'
+              }}>
                 <img
                   src={product.sync_product.thumbnail_url}
                   alt={product.sync_product.name}
@@ -532,13 +526,10 @@ export default function StorePage() {
                     left: 0,
                     width: '100%',
                     height: '100%',
-                    objectFit: 'cover',
-                    transition: 'transform 0.3s'
+                    objectFit: 'cover'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 />
-              </a>
+              </div>
               
               <div style={{ padding: '28px' }}>
                 <h3 style={{
