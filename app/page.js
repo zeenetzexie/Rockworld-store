@@ -12,9 +12,6 @@ export default function StorePage() {
   const [error, setError] = useState(null);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderLoading, setOrderLoading] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [selectedVariant, setSelectedVariant] = useState(null);
-  const [showVariantModal, setShowVariantModal] = useState(false);
   
   // Checkout form state
   const [checkoutForm, setCheckoutForm] = useState({
@@ -206,27 +203,6 @@ export default function StorePage() {
           }
           .products-grid {
             grid-template-columns: 1fr !important;
-          }
-        }
-
-        /* Modal Animations */
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
           }
         }
       `}</style>
@@ -554,380 +530,68 @@ export default function StorePage() {
                   {product.sync_variants.length} variant{product.sync_variants.length !== 1 ? 's' : ''} available
                 </p>
                 
-                {/* Price Range */}
                 <div style={{
-                  fontSize: '24px',
-                  fontWeight: '700',
-                  color: '#000',
-                  marginBottom: '20px',
-                  fontFamily: '"Archivo", sans-serif'
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                  marginBottom: '20px'
                 }}>
-                  ${Math.min(...product.sync_variants.map(v => parseFloat(v.retail_price))).toFixed(2)}
-                  {product.sync_variants.length > 1 && 
-                    ` - $${Math.max(...product.sync_variants.map(v => parseFloat(v.retail_price))).toFixed(2)}`
-                  }
+                  {product.sync_variants.slice(0, 3).map((variant) => (
+                    <button
+                      key={variant.id}
+                      onClick={() => addToCart(product, variant)}
+                      style={{
+                        flex: '1',
+                        minWidth: '80px',
+                        padding: '12px 18px',
+                        background: 'white',
+                        border: '1px solid #d0d0d0',
+                        borderRadius: '2px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        transition: 'all 0.3s',
+                        textAlign: 'center',
+                        letterSpacing: '0.5px',
+                        textTransform: 'uppercase'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = '#000000';
+                        e.currentTarget.style.background = '#000000';
+                        e.currentTarget.style.color = 'white';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = '#d0d0d0';
+                        e.currentTarget.style.background = 'white';
+                        e.currentTarget.style.color = 'black';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
+                      {variant.name.split(' - ').pop()}
+                      <div style={{ fontSize: '11px', marginTop: '4px', opacity: 0.7 }}>
+                        ${variant.retail_price}
+                      </div>
+                    </button>
+                  ))}
                 </div>
-
-                {/* Select Options Button */}
-                <button
-                  onClick={() => {
-                    setSelectedProduct(product);
-                    setSelectedVariant(product.sync_variants[0]);
-                    setShowVariantModal(true);
-                  }}
-                  style={{
-                    width: '100%',
-                    padding: '16px',
-                    background: '#000000',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    letterSpacing: '1px',
-                    textTransform: 'uppercase',
-                    transition: 'all 0.3s',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#333';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.2)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#000000';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                >
-                  <Package size={18} />
-                  Select Options
-                </button>
+                
+                {product.sync_variants.length > 3 && (
+                  <p style={{
+                    fontSize: '12px',
+                    color: '#999',
+                    textAlign: 'center'
+                  }}>
+                    + {product.sync_variants.length - 3} more options
+                  </p>
+                )}
               </div>
             </div>
           ))}
         </div>
       </section>
-
-      {/* Variant Selection Modal */}
-      {showVariantModal && selectedProduct && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.7)',
-          zIndex: 1000,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '20px',
-          animation: 'fadeIn 0.3s ease'
-        }}>
-          <div style={{
-            background: 'white',
-            borderRadius: '12px',
-            maxWidth: '900px',
-            width: '100%',
-            maxHeight: '90vh',
-            overflow: 'auto',
-            animation: 'slideUp 0.3s ease'
-          }}>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 0
-            }}>
-              {/* Left Side - Product Image */}
-              <div style={{
-                background: '#f5f5f5',
-                padding: '40px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <img
-                  src={selectedVariant?.files?.[0]?.preview_url || selectedProduct.sync_product.thumbnail_url}
-                  alt={selectedProduct.sync_product.name}
-                  style={{
-                    width: '100%',
-                    maxWidth: '400px',
-                    height: 'auto',
-                    objectFit: 'contain'
-                  }}
-                />
-              </div>
-
-              {/* Right Side - Variant Selection */}
-              <div style={{ padding: '40px' }}>
-                {/* Close Button */}
-                <button
-                  onClick={() => setShowVariantModal(false)}
-                  style={{
-                    position: 'absolute',
-                    top: '20px',
-                    right: '20px',
-                    background: 'white',
-                    border: '1px solid #e0e0e0',
-                    borderRadius: '50%',
-                    width: '40px',
-                    height: '40px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#f5f5f5';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'white';
-                  }}
-                >
-                  <X size={20} />
-                </button>
-
-                {/* Product Name */}
-                <h2 style={{
-                  fontSize: '28px',
-                  fontWeight: '700',
-                  marginBottom: '10px',
-                  fontFamily: '"Archivo", sans-serif',
-                  color: '#000'
-                }}>
-                  {selectedProduct.sync_product.name}
-                </h2>
-
-                {/* Price */}
-                <div style={{
-                  fontSize: '32px',
-                  fontWeight: '700',
-                  color: '#000',
-                  marginBottom: '30px',
-                  fontFamily: '"Archivo", sans-serif'
-                }}>
-                  ${selectedVariant?.retail_price}
-                </div>
-
-                {/* Size Selection */}
-                <div style={{ marginBottom: '25px' }}>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    marginBottom: '12px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '1px',
-                    color: '#333'
-                  }}>
-                    Select Size:
-                  </label>
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))',
-                    gap: '10px'
-                  }}>
-                    {(() => {
-                      // Group variants by size
-                      const sizes = {};
-                      selectedProduct.sync_variants.forEach(variant => {
-                        const size = variant.name.split(' - ').pop();
-                        if (!sizes[size]) {
-                          sizes[size] = variant;
-                        }
-                      });
-
-                      return Object.entries(sizes).map(([size, variant]) => (
-                        <button
-                          key={variant.id}
-                          onClick={() => setSelectedVariant(variant)}
-                          style={{
-                            padding: '14px 20px',
-                            background: selectedVariant?.id === variant.id ? '#000' : 'white',
-                            color: selectedVariant?.id === variant.id ? 'white' : '#000',
-                            border: selectedVariant?.id === variant.id ? '2px solid #000' : '2px solid #e0e0e0',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            fontWeight: '700',
-                            textTransform: 'uppercase',
-                            transition: 'all 0.2s'
-                          }}
-                          onMouseEnter={(e) => {
-                            if (selectedVariant?.id !== variant.id) {
-                              e.currentTarget.style.borderColor = '#000';
-                              e.currentTarget.style.transform = 'scale(1.05)';
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (selectedVariant?.id !== variant.id) {
-                              e.currentTarget.style.borderColor = '#e0e0e0';
-                              e.currentTarget.style.transform = 'scale(1)';
-                            }
-                          }}
-                        >
-                          {size}
-                        </button>
-                      ));
-                    })()}
-                  </div>
-                </div>
-
-                {/* Color Selection (if variants have colors) */}
-                {(() => {
-                  const colors = {};
-                  selectedProduct.sync_variants.forEach(variant => {
-                    const parts = variant.name.split(' - ');
-                    if (parts.length > 1) {
-                      const color = parts[parts.length - 2];
-                      if (color && !colors[color]) {
-                        colors[color] = variant;
-                      }
-                    }
-                  });
-
-                  if (Object.keys(colors).length > 1) {
-                    return (
-                      <div style={{ marginBottom: '25px' }}>
-                        <label style={{
-                          display: 'block',
-                          fontSize: '14px',
-                          fontWeight: '700',
-                          marginBottom: '12px',
-                          textTransform: 'uppercase',
-                          letterSpacing: '1px',
-                          color: '#333'
-                        }}>
-                          Select Color:
-                        </label>
-                        <div style={{
-                          display: 'flex',
-                          flexWrap: 'wrap',
-                          gap: '10px'
-                        }}>
-                          {Object.entries(colors).map(([color, variant]) => (
-                            <button
-                              key={variant.id}
-                              onClick={() => setSelectedVariant(variant)}
-                              style={{
-                                padding: '12px 20px',
-                                background: selectedVariant?.name.includes(color) ? '#000' : 'white',
-                                color: selectedVariant?.name.includes(color) ? 'white' : '#000',
-                                border: selectedVariant?.name.includes(color) ? '2px solid #000' : '2px solid #e0e0e0',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '14px',
-                                fontWeight: '600',
-                                transition: 'all 0.2s'
-                              }}
-                            >
-                              {color}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-
-                {/* Variant Details */}
-                <div style={{
-                  padding: '20px',
-                  background: '#f8f8f8',
-                  borderRadius: '8px',
-                  marginBottom: '25px'
-                }}>
-                  <div style={{
-                    fontSize: '14px',
-                    color: '#666',
-                    lineHeight: '1.8'
-                  }}>
-                    <strong style={{ color: '#000' }}>Selected:</strong> {selectedVariant?.name}
-                    <br />
-                    <strong style={{ color: '#000' }}>SKU:</strong> {selectedVariant?.sku}
-                  </div>
-                </div>
-
-                {/* Add to Cart Button */}
-                <button
-                  onClick={() => {
-                    addToCart(selectedProduct, selectedVariant);
-                    setShowVariantModal(false);
-                  }}
-                  style={{
-                    width: '100%',
-                    padding: '18px',
-                    background: '#000',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '16px',
-                    fontWeight: '700',
-                    letterSpacing: '1px',
-                    textTransform: 'uppercase',
-                    transition: 'all 0.3s',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '10px'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#333';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.2)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#000';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                >
-                  <ShoppingCart size={20} />
-                  Add to Cart - ${selectedVariant?.retail_price}
-                </button>
-
-                {/* Product Info */}
-                <div style={{
-                  marginTop: '30px',
-                  padding: '20px',
-                  background: '#f8f8f8',
-                  borderRadius: '8px'
-                }}>
-                  <h4 style={{
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    marginBottom: '12px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '1px'
-                  }}>
-                    Product Details
-                  </h4>
-                  <ul style={{
-                    fontSize: '14px',
-                    lineHeight: '1.8',
-                    color: '#666',
-                    margin: 0,
-                    paddingLeft: '20px'
-                  }}>
-                    <li>Premium quality materials</li>
-                    <li>Worldwide shipping available</li>
-                    <li>Made to order</li>
-                    <li>100% satisfaction guarantee</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Cart Sidebar */}
       {isCartOpen && (
