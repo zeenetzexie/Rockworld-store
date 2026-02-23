@@ -1403,7 +1403,111 @@ export default function StorePage() {
                       />
                     </div>
                     
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px' }}>
+                      <div>
+                        <label style={{
+                          display: 'block',
+                          marginBottom: '8px',
+                          fontSize: '14px',
+                          fontWeight: '600'
+                        }}>
+                          Country *
+                        </label>
+                        <select
+                          required
+                          value={checkoutForm.country}
+                          onChange={(e) => setCheckoutForm({...checkoutForm, country: e.target.value})}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '2px solid #e0e0e0',
+                            borderRadius: '8px',
+                            fontSize: '16px',
+                            fontFamily: 'inherit',
+                            background: 'white'
+                          }}
+                        >
+                          <option value="US">United States</option>
+                          <option value="CA">Canada</option>
+                          <option value="GB">United Kingdom</option>
+                          <option value="AU">Australia</option>
+                          <option value="ZM">Zambia</option>
+                          <option value="ZA">South Africa</option>
+                          <option value="KE">Kenya</option>
+                          <option value="NG">Nigeria</option>
+                          <option value="GH">Ghana</option>
+                          <option value="UG">Uganda</option>
+                          <option value="TZ">Tanzania</option>
+                          <option value="DE">Germany</option>
+                          <option value="FR">France</option>
+                          <option value="ES">Spain</option>
+                          <option value="IT">Italy</option>
+                          <option value="NL">Netherlands</option>
+                          <option value="BE">Belgium</option>
+                          <option value="CH">Switzerland</option>
+                          <option value="AT">Austria</option>
+                          <option value="SE">Sweden</option>
+                          <option value="NO">Norway</option>
+                          <option value="DK">Denmark</option>
+                          <option value="FI">Finland</option>
+                          <option value="IE">Ireland</option>
+                          <option value="PL">Poland</option>
+                          <option value="CZ">Czech Republic</option>
+                          <option value="PT">Portugal</option>
+                          <option value="GR">Greece</option>
+                          <option value="JP">Japan</option>
+                          <option value="CN">China</option>
+                          <option value="IN">India</option>
+                          <option value="SG">Singapore</option>
+                          <option value="MY">Malaysia</option>
+                          <option value="TH">Thailand</option>
+                          <option value="PH">Philippines</option>
+                          <option value="ID">Indonesia</option>
+                          <option value="VN">Vietnam</option>
+                          <option value="NZ">New Zealand</option>
+                          <option value="MX">Mexico</option>
+                          <option value="BR">Brazil</option>
+                          <option value="AR">Argentina</option>
+                          <option value="CL">Chile</option>
+                          <option value="CO">Colombia</option>
+                          <option value="AE">United Arab Emirates</option>
+                          <option value="SA">Saudi Arabia</option>
+                          <option value="IL">Israel</option>
+                          <option value="TR">Turkey</option>
+                          <option value="EG">Egypt</option>
+                          <option value="ZW">Zimbabwe</option>
+                          <option value="BW">Botswana</option>
+                          <option value="NA">Namibia</option>
+                          <option value="MW">Malawi</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{
+                          display: 'block',
+                          marginBottom: '8px',
+                          fontSize: '14px',
+                          fontWeight: '600'
+                        }}>
+                          ZIP / Postal Code *
+                        </label>
+                        <input
+                          required
+                          value={checkoutForm.zip}
+                          onChange={(e) => setCheckoutForm({...checkoutForm, zip: e.target.value})}
+                          placeholder="12345"
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '2px solid #e0e0e0',
+                            borderRadius: '8px',
+                            fontSize: '16px',
+                            fontFamily: 'inherit'
+                          }}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                       <div>
                         <label style={{
                           display: 'block',
@@ -1434,36 +1538,12 @@ export default function StorePage() {
                           fontSize: '14px',
                           fontWeight: '600'
                         }}>
-                          State *
+                          State / Province
                         </label>
                         <input
-                          required
                           value={checkoutForm.state}
                           onChange={(e) => setCheckoutForm({...checkoutForm, state: e.target.value})}
-                          placeholder="CA"
-                          style={{
-                            width: '100%',
-                            padding: '12px',
-                            border: '2px solid #e0e0e0',
-                            borderRadius: '8px',
-                            fontSize: '16px',
-                            fontFamily: 'inherit'
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label style={{
-                          display: 'block',
-                          marginBottom: '8px',
-                          fontSize: '14px',
-                          fontWeight: '600'
-                        }}>
-                          ZIP *
-                        </label>
-                        <input
-                          required
-                          value={checkoutForm.zip}
-                          onChange={(e) => setCheckoutForm({...checkoutForm, zip: e.target.value})}
+                          placeholder="Optional"
                           style={{
                             width: '100%',
                             padding: '12px',
@@ -1540,70 +1620,89 @@ export default function StorePage() {
                     </button>
 
                     {/* PayPal Button */}
-                    <div style={{
-                      marginTop: '8px',
-                      padding: '16px',
-                      background: '#f8f8f8',
-                      borderRadius: '8px'
-                    }}>
-                      <p style={{
-                        textAlign: 'center',
-                        marginBottom: '12px',
-                        fontSize: '14px',
-                        color: '#666',
-                        fontWeight: '600'
+                    {process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ? (
+                      <div style={{
+                        marginTop: '8px',
+                        padding: '16px',
+                        background: '#f8f8f8',
+                        borderRadius: '8px'
                       }}>
-                        Or pay with PayPal:
-                      </p>
-                      <PayPalScriptProvider options={paypalOptions}>
-                        <PayPalButtons
-                          createOrder={async () => {
-                            try {
-                              const response = await fetch('/api/paypal/create-order', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ items: cart }),
-                              });
-                              const data = await response.json();
-                              if (data.error) throw new Error(data.error);
-                              return data.orderId;
-                            } catch (error) {
-                              console.error('PayPal create order error:', error);
-                              alert('Failed to create PayPal order. Please try again.');
-                              throw error;
-                            }
-                          }}
-                          onApprove={async (data) => {
-                            try {
-                              const response = await fetch('/api/paypal/capture-payment', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ orderId: data.orderID }),
-                              });
-                              const details = await response.json();
-                              if (details.error) throw new Error(details.error);
-                              
-                              // Clear cart and redirect to success
-                              setCart([]);
-                              window.location.href = `/success?paypal_order=${data.orderID}`;
-                            } catch (error) {
-                              console.error('PayPal capture error:', error);
-                              alert('Payment failed. Please contact support.');
-                            }
-                          }}
-                          onError={(error) => {
-                            console.error('PayPal error:', error);
-                            alert('PayPal checkout failed. Please try again.');
-                          }}
-                          style={{
-                            layout: 'vertical',
-                            color: 'gold',
-                            shape: 'rect',
-                            label: 'paypal',
-                          }}
-                        />
-                      </PayPalScriptProvider>
-                    </div>
+                        <p style={{
+                          textAlign: 'center',
+                          marginBottom: '12px',
+                          fontSize: '14px',
+                          color: '#666',
+                          fontWeight: '600'
+                        }}>
+                          Or pay with PayPal:
+                        </p>
+                        <PayPalScriptProvider options={paypalOptions}>
+                          <PayPalButtons
+                            createOrder={async () => {
+                              try {
+                                const response = await fetch('/api/paypal/create-order', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ items: cart }),
+                                });
+                                const data = await response.json();
+                                if (data.error) throw new Error(data.error);
+                                return data.orderId;
+                              } catch (error) {
+                                console.error('PayPal create order error:', error);
+                                alert('Failed to create PayPal order. Please try again.');
+                                throw error;
+                              }
+                            }}
+                            onApprove={async (data) => {
+                              try {
+                                const response = await fetch('/api/paypal/capture-payment', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ orderId: data.orderID }),
+                                });
+                                const details = await response.json();
+                                if (details.error) throw new Error(details.error);
+                                
+                                // Clear cart and redirect to success
+                                setCart([]);
+                                window.location.href = `/success?paypal_order=${data.orderID}`;
+                              } catch (error) {
+                                console.error('PayPal capture error:', error);
+                                alert('Payment failed. Please contact support.');
+                              }
+                            }}
+                            onError={(error) => {
+                              console.error('PayPal error:', error);
+                              alert('PayPal checkout failed. Please try again.');
+                            }}
+                            style={{
+                              layout: 'vertical',
+                              color: 'gold',
+                              shape: 'rect',
+                              label: 'paypal',
+                            }}
+                          />
+                        </PayPalScriptProvider>
+                      </div>
+                    ) : (
+                      <div style={{
+                        marginTop: '16px',
+                        padding: '16px',
+                        background: '#fff3cd',
+                        border: '1px solid #ffc107',
+                        borderRadius: '8px',
+                        textAlign: 'center'
+                      }}>
+                        <p style={{
+                          fontSize: '14px',
+                          color: '#856404',
+                          margin: 0
+                        }}>
+                          💡 PayPal payment option will appear here once configured
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </form>
               )}
