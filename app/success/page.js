@@ -11,7 +11,6 @@ function SuccessContent() {
   const paypalOrder = searchParams.get('paypal_order');
 
   useEffect(() => {
-    // Clear cart after successful payment
     if (typeof window !== 'undefined') {
       localStorage.removeItem('cart');
     }
@@ -473,5 +472,12 @@ export default function SuccessPage() {
         }
       `}</style>
     </div>
+  );
+}
+export default function SuccessPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SuccessContent />
+    </Suspense>
   );
 }
