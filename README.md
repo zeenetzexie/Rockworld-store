@@ -153,4 +153,3 @@ For Next.js questions, visit: https://nextjs.org/docs
 ## License
 
 MIT
-
