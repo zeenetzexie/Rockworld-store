@@ -2,15 +2,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Plus, Minus, X, Package, CreditCard, Loader } from 'lucide-react';
+import { loadStripe } from '@stripe/stripe-js';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 
-// Initialize Stripe only if key exists
-let stripePromise = null;
-if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
-  import('@stripe/stripe-js').then(({ loadStripe }) => {
-    stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
-  });
-}
+// Initialize Stripe
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+
+// PayPal configuration
+const paypalOptions = {
+  'client-id': process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || '',
+  currency: 'USD',
+  intent: 'capture',
+};
 
 export default function StorePage() {
   const [products, setProducts] = useState([]);
@@ -1566,58 +1569,55 @@ export default function StorePage() {
                       </div>
                     )}
                     
-                    {/* Stripe Button - Only show if configured */}
-                    {process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY && (
-                      <button
-                        type="submit"
-                        disabled={orderLoading}
-                        style={{
-                          width: '100%',
-                          padding: '18px',
-                          background: orderLoading ? '#ccc' : '#000000',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          fontSize: '14px',
-                          fontWeight: '700',
-                          cursor: orderLoading ? 'not-allowed' : 'pointer',
-                          transition: 'all 0.3s',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '12px',
-                          letterSpacing: '1px',
-                          textTransform: 'uppercase',
-                          marginBottom: '16px'
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!orderLoading) {
-                            e.currentTarget.style.background = '#333';
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!orderLoading) {
-                            e.currentTarget.style.background = '#000000';
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = 'none';
-                          }
-                        }}
-                      >
-                        {orderLoading ? (
-                          <>
-                            <Loader size={20} style={{animation: 'spin 1s linear infinite'}} />
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            <CreditCard size={20} />
-                            Pay with Stripe (${cartTotal.toFixed(2)})
-                          </>
-                        )}
-                      </button>
-                    )}
+                    <button
+                      type="submit"
+                      disabled={orderLoading}
+                      style={{
+                        width: '100%',
+                        padding: '18px',
+                        background: orderLoading ? '#ccc' : '#000000',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        fontWeight: '700',
+                        cursor: orderLoading ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.3s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '12px',
+                        letterSpacing: '1px',
+                        textTransform: 'uppercase',
+                        marginBottom: '16px'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!orderLoading) {
+                          e.currentTarget.style.background = '#333';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!orderLoading) {
+                          e.currentTarget.style.background = '#000000';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }
+                      }}
+                    >
+                      {orderLoading ? (
+                        <>
+                          <Loader size={20} style={{animation: 'spin 1s linear infinite'}} />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard size={20} />
+                          Pay with Stripe (${cartTotal.toFixed(2)})
+                        </>
+                      )}
+                    </button>
 
                     {/* PayPal Button */}
                     {process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ? (
