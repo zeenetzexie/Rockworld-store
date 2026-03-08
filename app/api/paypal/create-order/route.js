@@ -26,12 +26,41 @@ export async function POST(request) {
   try {
     const { items } = await request.json();
 
-    // Calculate total
+    if (!items || items.length === 0) {
+      throw new Error('No items in cart');
+    }
+
+    // Calculate total from cart items
     const total = items.reduce((sum, item) => {
-      return sum + (parseFloat(item.variant.retail_price) * item.quantity);
+      const price = parseFloat(item.price || item.variant?.retail_price || 0);
+      const quantity = parseInt(item.quantity || 1);
+      return sum + (price * quantity);
     }, 0);
 
+    if (total === 0) {
+      throw new Error('Invalid cart total');
+    }
+
     const accessToken = await getAccessToken();
+
+    // Format items for PayPal
+    const paypalItems = items.map(item => {
+      const productName = item.product?.name || item.name || 'Product';
+      const variantName = item.variant?.name || '';
+      const displayName = variantName ? `${productName} - ${variantName}` : productName;
+      const price = parseFloat(item.price || item.variant?.retail_price || 0);
+      const quantity = parseInt(item.quantity || 1);
+
+      return {
+        name: displayName.substring(0, 127), // PayPal limit
+        description: variantName.substring(0, 127) || 'Product',
+        unit_amount: {
+          currency_code: 'USD',
+          value: price.toFixed(2),
+        },
+        quantity: quantity.toString(),
+      };
+    });
 
     // Create PayPal order
     const orderResponse = await fetch(`${PAYPAL_API_BASE}/v2/checkout/orders`, {
@@ -54,31 +83,24 @@ export async function POST(request) {
                 },
               },
             },
-            items: items.map(item => ({
-              name: item.product.name,
-              description: item.variant.name,
-              unit_amount: {
-                currency_code: 'USD',
-                value: parseFloat(item.variant.retail_price).toFixed(2),
-              },
-              quantity: item.quantity.toString(),
-            })),
+            items: paypalItems,
           },
         ],
         application_context: {
           brand_name: 'ROCKWORLD',
           landing_page: 'NO_PREFERENCE',
           user_action: 'PAY_NOW',
-          return_url: `${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/success`,
-          cancel_url: `${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/?canceled=true`,
+          return_url: `${process.env.NEXT_PUBLIC_URL || 'https://rockworld-store.vercel.app'}/success`,
+          cancel_url: `${process.env.NEXT_PUBLIC_URL || 'https://rockworld-store.vercel.app'}/?canceled=true`,
         },
       }),
     });
 
     const orderData = await orderResponse.json();
 
-    if (orderData.error) {
-      throw new Error(orderData.error.message || 'Failed to create PayPal order');
+    if (orderData.error || !orderData.id) {
+      console.error('PayPal API Error:', orderData);
+      throw new Error(orderData.error?.message || orderData.message || 'Failed to create PayPal order');
     }
 
     return NextResponse.json({ orderId: orderData.id });
