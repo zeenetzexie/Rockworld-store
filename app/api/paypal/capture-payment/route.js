@@ -26,6 +26,10 @@ export async function POST(request) {
   try {
     const { orderId } = await request.json();
 
+    if (!orderId) {
+      throw new Error('No order ID provided');
+    }
+
     const accessToken = await getAccessToken();
 
     // Capture the payment
@@ -42,8 +46,9 @@ export async function POST(request) {
 
     const captureData = await captureResponse.json();
 
-    if (captureData.error) {
-      throw new Error(captureData.error.message || 'Failed to capture payment');
+    if (captureData.error || captureData.status === 'ERROR') {
+      console.error('PayPal Capture Error:', captureData);
+      throw new Error(captureData.error?.message || captureData.message || 'Failed to capture payment');
     }
 
     return NextResponse.json(captureData);
