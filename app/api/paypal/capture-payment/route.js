@@ -5,21 +5,26 @@ const PAYPAL_API_BASE = process.env.PAYPAL_MODE === 'live'
   : 'https://api-m.sandbox.paypal.com';
 
 async function getAccessToken() {
-  const auth = Buffer.from(
-    `${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`
-  ).toString('base64');
+  try {
+    const auth = Buffer.from(
+      `${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`
+    ).toString('base64');
 
-  const response = await fetch(`${PAYPAL_API_BASE}/v1/oauth2/token`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${auth}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: 'grant_type=client_credentials',
-  });
+    const response = await fetch(`${PAYPAL_API_BASE}/v1/oauth2/token`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${auth}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: 'grant_type=client_credentials',
+    });
 
-  const data = await response.json();
-  return data.access_token;
+    const data = await response.json();
+    return data.access_token;
+  } catch (error) {
+    console.error('Get access token error:', error);
+    throw error;
+  }
 }
 
 export async function POST(request) {
@@ -32,7 +37,6 @@ export async function POST(request) {
 
     const accessToken = await getAccessToken();
 
-    // Capture the payment
     const captureResponse = await fetch(
       `${PAYPAL_API_BASE}/v2/checkout/orders/${orderId}/capture`,
       {
