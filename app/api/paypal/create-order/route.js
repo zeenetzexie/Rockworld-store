@@ -33,12 +33,10 @@ export async function POST(request) {
     
     console.log('Received items:', items);
 
-    // Simple total calculation
     let total = 0;
     const paypalItems = [];
 
     for (const item of items) {
-      // Get price - try multiple places
       let price = 0;
       if (item.price) {
         price = parseFloat(item.price);
@@ -46,7 +44,6 @@ export async function POST(request) {
         price = parseFloat(item.variant.retail_price);
       }
 
-      // Get name
       let name = 'Product';
       if (item.product && item.product.name) {
         name = item.product.name;
@@ -73,7 +70,6 @@ export async function POST(request) {
 
     const accessToken = await getAccessToken();
 
-    // Create order
     const orderResponse = await fetch(`${PAYPAL_API_BASE}/v2/checkout/orders`, {
       method: 'POST',
       headers: {
@@ -123,39 +119,3 @@ export async function POST(request) {
     );
   }
 }
-```
-
-**Save and commit:** "Simplified PayPal create-order with better error handling"
-
----
-
-## **After uploading:**
-
-1. **Wait for Vercel to rebuild** (2-3 mins)
-2. **Test PayPal checkout**
-3. **Check browser console** (F12) for the `console.log` messages
-4. **Send me screenshot** of what you see in console
-
-The console.log statements will help us see:
-- What items are being sent
-- What total is calculated
-- What PayPal returns
-
----
-
-## **If still fails, let's check:**
-
-**Are the environment variables set correctly in Vercel?**
-
-Go to Vercel → Settings → Environment Variables
-
-Make sure you have:
-```
-PAYPAL_CLIENT_ID (NOT NEXT_PUBLIC_)
-PAYPAL_CLIENT_SECRET
-PAYPAL_MODE=sandbox
-```
-
-**NOT:**
-```
-NEXT_PUBLIC_PAYPAL_CLIENT_ID  ← Wrong one!
