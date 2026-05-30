@@ -1,52 +1,47 @@
 import { NextResponse } from 'next/server';
 
-export async function GET() {
-  const apiKey = process.env.PRINTFUL_API_KEY;
-
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: 'Printful API key not configured' },
-      { status: 500 }
-    );
-  }
-
+export async function GET(request) {
   try {
-    // Fetch all products
-    const productsResponse = await fetch('https://api.printful.com/store/products', {
+    const apiKey = process.env.PRINTFUL_API_KEY;
+
+    if (!apiKey) {
+      console.error('PRINTFUL_API_KEY is not set');
+      return NextResponse.json(
+        { error: 'PRINTFUL_API_KEY is not configured' },
+        { status: 500 }
+      );
+    }
+
+    console.log('Fetching products from Printful...');
+
+    const response = await fetch('https://api.printful.com/products', {
+      method: 'GET',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
     });
 
-    if (!productsResponse.ok) {
-      throw new Error('Failed to fetch products');
+    if (!response.ok) {
+      console.error('Printful API error:', response.status, response.statusText);
+      return NextResponse.json(
+        { error: `Printful API error: ${response.statusText}` },
+        { status: response.status }
+      );
     }
 
-    const productsData = await productsResponse.json();
+    const data = await response.json();
+    console.log('Printful response:', data);
 
-    // Fetch detailed info for each product including variants
-    const detailedProducts = await Promise.all(
-      productsData.result.map(async (product) => {
-        const detailResponse = await fetch(
-          `https://api.printful.com/store/products/${product.id}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${apiKey}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-        const detailData = await detailResponse.json();
-        return detailData.result;
-      })
-    );
+    // Extract products from the response
+    const products = data.result || data.data || [];
 
-    return NextResponse.json({ products: detailedProducts });
+    return NextResponse.json(products);
+
   } catch (error) {
-    console.error('Printful API error:', error);
+    console.error('Error fetching Printful products:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch products from Printful' },
+      { error: error.message || 'Failed to fetch products' },
       { status: 500 }
     );
   }
