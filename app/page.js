@@ -5,15 +5,12 @@ import { ShoppingCart, Plus, Minus, X, Package, CreditCard, Loader } from 'lucid
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 
 // Initialize Stripe only if key exists
-// Stripe initialization
-let stripePromise;
-const getStripePromise = () => {
-  if (!stripePromise && process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
-    const { loadStripe } = require('@stripe/stripe-js');
+let stripePromise = null;
+if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+  import('@stripe/stripe-js').then(({ loadStripe }) => {
     stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
-  }
-  return stripePromise;
-};
+  });
+}
 
 // PayPal configuration
 const paypalOptions = {
