@@ -1,55 +1,42 @@
 import { NextResponse } from 'next/server';
-import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-export async function POST(request) {
+export async function GET() {
   try {
-    const { items, customerEmail, shippingAddress } = await request.json();
+    const apiKey = process.env.PRINTFUL_API_KEY;
 
-    if (!items || items.length === 0) {
+    if (!apiKey) {
       return NextResponse.json(
-        { error: 'Cart is empty' },
-        { status: 400 }
+        { error: 'PRINTFUL_API_KEY is not configured', products: [] },
+        { status: 500 }
       );
     }
 
-    // Build line items for Stripe
-    const lineItems = items.map(item => ({
-      price_data: {
-        currency: 'usd',
-        product_data: {
-          name: `${item.name} - ${item.variant}`,
-        },
-        unit_amount: Math.round(item.price * 100), // Convert to cents
-      },
-      quantity: item.quantity,
-    }));
-
-    // Create Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: lineItems,
-      mode: 'payment',
-      success_url: `${request.headers.get('origin')}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${request.headers.get('origin')}/?canceled=true`,
-      customer_email: customerEmail,
-      billing_address_collection: 'required',
-      shipping_address_collection: {
-        allowed_countries: ['US', 'CA', 'GB', 'ZM', 'AU'],
+    const response = await fetch('https://api.printful.com/products', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
       },
     });
 
-    console.log('Stripe session created:', session.id);
-    return NextResponse.json({ 
-      sessionId: session.id,
-      url: session.url
-    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Printful API error:', errorData);
+      return NextResponse.json(
+        { error: `Printful API error: ${response.statusText}`, products: [] },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+    const products = data.result || data.products || [];
+
+    return NextResponse.json({ products });
 
   } catch (error) {
-    console.error('Stripe checkout error:', error);
+    console.error('Error fetching Printful products:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to create checkout session' },
+      { error: error.message, products: [] },
       { status: 500 }
     );
   }
