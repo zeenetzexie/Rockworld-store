@@ -12,6 +12,13 @@ if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_
   });
 }
 
+// PayPal configuration
+const paypalOptions = {
+  'client-id': process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || '',
+  currency: 'USD',
+  intent: 'capture',
+};
+
 export default function StorePage() {
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
