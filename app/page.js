@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Plus, Minus, X, Package, CreditCard, Loader } from 'lucide-react';
+import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 
 // Initialize Stripe only if key exists
 let stripePromise = null;
@@ -1567,63 +1568,55 @@ export default function StorePage() {
                     
                     {/* Stripe Button - Only show if configured */}
                     {process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY && (
-                    <button
-                      type="submit"
-                      disabled={orderLoading}
-                      style={{
-                        width: '100%',
-                        padding: '18px',
-                        background: orderLoading ? '#ccc' : '#000000',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        fontWeight: '700',
-                        cursor: orderLoading ? 'not-allowed' : 'pointer',
-                        transition: 'all 0.3s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '12px',
-                        letterSpacing: '1px',
-                        textTransform: 'uppercase',
-                        marginBottom: '16px'
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!orderLoading) {
-                          e.currentTarget.style.background = '#333';
-                          e.currentTarget.style.transform = 'translateY(-2px)';
-                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!orderLoading) {
-                          e.currentTarget.style.background = '#000000';
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = 'none';
-                        }
-                      }}
-                    >
-                      {orderLoading ? (
-                        <>
-                          <Loader size={20} style={{animation: 'spin 1s linear infinite'}} />
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard size={20} />
-                          Pay with Stripe (${cartTotal.toFixed(2)})
-                        </>
-                      )}
-                    </button>
-                    )}
-                  </div>
-                </form>
-              )}
-            </div>
-          </div>
-        </>
-      )}</button>
+                      <button
+                        type="submit"
+                        disabled={orderLoading}
+                        style={{
+                          width: '100%',
+                          padding: '18px',
+                          background: orderLoading ? '#ccc' : '#000000',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          fontSize: '14px',
+                          fontWeight: '700',
+                          cursor: orderLoading ? 'not-allowed' : 'pointer',
+                          transition: 'all 0.3s',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '12px',
+                          letterSpacing: '1px',
+                          textTransform: 'uppercase',
+                          marginBottom: '16px'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!orderLoading) {
+                            e.currentTarget.style.background = '#333';
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!orderLoading) {
+                            e.currentTarget.style.background = '#000000';
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }
+                        }}
+                      >
+                        {orderLoading ? (
+                          <>
+                            <Loader size={20} style={{animation: 'spin 1s linear infinite'}} />
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <CreditCard size={20} />
+                            Pay with Stripe (${cartTotal.toFixed(2)})
+                          </>
+                        )}
+                      </button>
                     )}
 
                     {/* PayPal Button */}
