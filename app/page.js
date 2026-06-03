@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Plus, Minus, X, Package, CreditCard, Loader } from 'lucide-react';
+import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 
 // Initialize Stripe only if key exists
 let stripePromise = null;
@@ -1567,55 +1568,156 @@ export default function StorePage() {
                     
                     {/* Stripe Button - Only show if configured */}
                     {process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY && (
-                      <button
-                        type="submit"
-                        disabled={orderLoading}
-                        style={{
-                          width: '100%',
-                          padding: '18px',
-                          background: orderLoading ? '#ccc' : '#000000',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
+                    <button
+                      type="submit"
+                      disabled={orderLoading}
+                      style={{
+                        width: '100%',
+                        padding: '18px',
+                        background: orderLoading ? '#ccc' : '#000000',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        fontWeight: '700',
+                        cursor: orderLoading ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.3s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '12px',
+                        letterSpacing: '1px',
+                        textTransform: 'uppercase',
+                        marginBottom: '16px'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!orderLoading) {
+                          e.currentTarget.style.background = '#333';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!orderLoading) {
+                          e.currentTarget.style.background = '#000000';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }
+                      }}
+                    >
+                      {orderLoading ? (
+                        <>
+                          <Loader size={20} style={{animation: 'spin 1s linear infinite'}} />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard size={20} />
+                          Pay with Stripe (${cartTotal.toFixed(2)})
+                        </>
+                      )}
+                    </button>
+                    )}
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </>
+      )}</button>
+                    )}
+
+                    {/* PayPal Button */}
+                    {process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ? (
+                      <div style={{
+                        marginTop: '8px',
+                        padding: '16px',
+                        background: '#f8f8f8',
+                        borderRadius: '8px'
+                      }}>
+                        <p style={{
+                          textAlign: 'center',
+                          marginBottom: '12px',
                           fontSize: '14px',
-                          fontWeight: '700',
-                          cursor: orderLoading ? 'not-allowed' : 'pointer',
-                          transition: 'all 0.3s',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '12px',
-                          letterSpacing: '1px',
-                          textTransform: 'uppercase',
-                          marginBottom: '16px'
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!orderLoading) {
-                            e.currentTarget.style.background = '#333';
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!orderLoading) {
-                            e.currentTarget.style.background = '#000000';
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = 'none';
-                          }
-                        }}
-                      >
-                        {orderLoading ? (
-                          <>
-                            <Loader size={20} style={{animation: 'spin 1s linear infinite'}} />
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            <CreditCard size={20} />
-                            Pay with Stripe (${cartTotal.toFixed(2)})
-                          </>
-                        )}
-                      
+                          color: '#666',
+                          fontWeight: '600'
+                        }}>
+                          Or pay with PayPal:
+                        </p>
+                        <PayPalScriptProvider options={paypalOptions}>
+                          <PayPalButtons
+                            createOrder={async () => {
+                              try {
+                                const response = await fetch('/api/paypal/create-order', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ items: cart }),
+                                });
+                                const data = await response.json();
+                                if (data.error) throw new Error(data.error);
+                                return data.orderId;
+                              } catch (error) {
+                                console.error('PayPal create order error:', error);
+                                alert('Failed to create PayPal order. Please try again.');
+                                throw error;
+                              }
+                            }}
+                            onApprove={async (data) => {
+                              try {
+                                const response = await fetch('/api/paypal/capture-payment', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ orderId: data.orderID }),
+                                });
+                                const details = await response.json();
+                                if (details.error) throw new Error(details.error);
+                                
+                                // Clear cart and redirect to success
+                                setCart([]);
+                                window.location.href = `/success?paypal_order=${data.orderID}`;
+                              } catch (error) {
+                                console.error('PayPal capture error:', error);
+                                alert('Payment failed. Please contact support.');
+                              }
+                            }}
+                            onError={(error) => {
+                              console.error('PayPal error:', error);
+                              alert('PayPal checkout failed. Please try again.');
+                            }}
+                            style={{
+                              layout: 'vertical',
+                              color: 'gold',
+                              shape: 'rect',
+                              label: 'paypal',
+                            }}
+                          />
+                        </PayPalScriptProvider>
+                      </div>
+                    ) : (
+                      <div style={{
+                        marginTop: '16px',
+                        padding: '16px',
+                        background: '#fff3cd',
+                        border: '1px solid #ffc107',
+                        borderRadius: '8px',
+                        textAlign: 'center'
+                      }}>
+                        <p style={{
+                          fontSize: '14px',
+                          color: '#856404',
+                          margin: 0
+                        }}>
+                          💡 PayPal payment option will appear here once configured
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Premium Modern Footer */}
       <footer style={{
