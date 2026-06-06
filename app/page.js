@@ -1660,14 +1660,6 @@ export default function StorePage() {
                         )}
                       </button>
                     )}
-                  </div>
-                </form>
-              )}
-            </div>
-          </div>
-        </>
-      )}
-
 <button
   onClick={handlePayPalCardCheckout}
   disabled={orderLoading}
@@ -1715,6 +1707,13 @@ export default function StorePage() {
     </>
   )}
 </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Premium Modern Footer */}
       <footer style={{
