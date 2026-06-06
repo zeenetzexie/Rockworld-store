@@ -1,5 +1,3 @@
-import axios from 'axios';
-
 export async function POST(request) {
   try {
     const { amount, currency, description, email, orderId } = await request.json();
@@ -22,26 +20,33 @@ export async function POST(request) {
       : 'https://api.sandbox.paypal.com';
 
     // Get access token
-    const authResponse = await axios.post(
-      `${apiBase}/v1/oauth2/token`,
-      'grant_type=client_credentials',
-      {
-        auth: {
-          username: clientId,
-          password: clientSecret
-        },
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
-      }
-    );
+    const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+    
+    const tokenResponse = await fetch(`${apiBase}/v1/oauth2/token`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: 'grant_type=client_credentials'
+    });
 
-    const accessToken = authResponse.data.access_token;
+    if (!tokenResponse.ok) {
+      const error = await tokenResponse.json();
+      throw new Error(`Token error: ${error.error_description}`);
+    }
+
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.access_token;
 
     // Create order
-    const orderResponse = await axios.post(
-      `${apiBase}/v2/checkout/orders`,
-      {
+    const orderResponse = await fetch(`${apiBase}/v2/checkout/orders`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
         intent: 'CAPTURE',
         purchase_units: [
           {
@@ -55,36 +60,28 @@ export async function POST(request) {
         ],
         payer: {
           email_address: email
-        },
-        payment_source: {
-          card: {
-            attributes: {
-              vault: {
-                store_in_vault: 'OFF_SESSION'
-              }
-            }
-          }
         }
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+      })
+    });
+
+    if (!orderResponse.ok) {
+      const error = await orderResponse.json();
+      throw new Error(`Order creation failed: ${error.message}`);
+    }
+
+    const orderData = await orderResponse.json();
 
     return Response.json({
-      orderId: orderResponse.data.id,
-      status: orderResponse.data.status,
+      orderId: orderData.id,
+      status: orderData.status,
       success: true
     });
 
   } catch (error) {
-    console.error('PayPal error:', error.response?.data || error.message);
+    console.error('PayPal error:', error.message);
     
     return Response.json({
-      error: error.response?.data?.message || 'PayPal payment failed',
+      error: error.message || 'PayPal payment failed',
       success: false
     }, { status: 500 });
   }
