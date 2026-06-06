@@ -39,7 +39,10 @@ export async function POST(request) {
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
 
-    // Create order
+    // Get origin for return URLs
+    const origin = request.headers.get('origin') || 'https://rockworld-store.vercel.app';
+
+    // Create order with return URLs
     const orderResponse = await fetch(`${apiBase}/v2/checkout/orders`, {
       method: 'POST',
       headers: {
@@ -60,7 +63,18 @@ export async function POST(request) {
         ],
         payer: {
           email_address: email
-        }
+        },
+        payment_source: {
+          card: {
+            attributes: {
+              vault: {
+                store_in_vault: 'OFF_SESSION'
+              }
+            }
+          }
+        },
+        return_url: `${origin}/success?payment=paypal`,
+        cancel_url: `${origin}/`
       })
     });
 
@@ -71,9 +85,17 @@ export async function POST(request) {
 
     const orderData = await orderResponse.json();
 
+    // Find the approve link in the links array
+    const approveLink = orderData.links.find(link => link.rel === 'approve');
+    
+    if (!approveLink) {
+      throw new Error('No approve link found in PayPal response');
+    }
+
     return Response.json({
       orderId: orderData.id,
       status: orderData.status,
+      checkoutUrl: approveLink.href,
       success: true
     });
 
