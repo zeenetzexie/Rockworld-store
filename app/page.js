@@ -150,7 +150,7 @@ export default function StorePage() {
     }
   };
 
-  const handlePayPalCardCheckout = async (e) => {
+const handlePayPalCardCheckout = async (e) => {
   e.preventDefault();
   setOrderLoading(true);
   setError(null);
@@ -158,7 +158,9 @@ export default function StorePage() {
   try {
     // Validate form
     if (!checkoutForm.email || !checkoutForm.firstName || !checkoutForm.lastName) {
-      throw new Error('Please fill in all required fields');
+      setError('Please fill in all required fields');
+      setOrderLoading(false);
+      return;
     }
  
     // Call PayPal card payment route
@@ -177,15 +179,15 @@ export default function StorePage() {
     const data = await response.json();
  
     if (!response.ok || !data.success) {
-      throw new Error(data.error || 'PayPal payment failed');
+      throw new Error(data.error || 'PayPal payment initialization failed');
     }
  
-    // Clear cart and show success
-    setCart([]);
-    localStorage.removeItem('cart');
-    
-    // Redirect to success page
-    window.location.href = `/success?paypal_order=${data.orderId}`;
+    // Redirect to PayPal's hosted checkout where customer enters card details
+    if (data.checkoutUrl) {
+      window.location.href = data.checkoutUrl;
+    } else {
+      throw new Error('No checkout URL provided');
+    }
  
   } catch (error) {
     setError(error.message || 'PayPal payment error');
