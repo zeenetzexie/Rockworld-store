@@ -150,6 +150,49 @@ export default function StorePage() {
     }
   };
 
+  const handlePayPalCardCheckout = async (e) => {
+  e.preventDefault();
+  setOrderLoading(true);
+  setError(null);
+ 
+  try {
+    // Validate form
+    if (!checkoutForm.email || !checkoutForm.firstName || !checkoutForm.lastName) {
+      throw new Error('Please fill in all required fields');
+    }
+ 
+    // Call PayPal card payment route
+    const response = await fetch('/api/paypal/card-payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount: cartTotal,
+        currency: 'USD',
+        description: `ROCKWORLD Order - ${cart.length} items`,
+        email: checkoutForm.email,
+        orderId: `order-${Date.now()}`
+      })
+    });
+ 
+    const data = await response.json();
+ 
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || 'PayPal payment failed');
+    }
+ 
+    // Clear cart and show success
+    setCart([]);
+    localStorage.removeItem('cart');
+    
+    // Redirect to success page
+    window.location.href = `/success?paypal_order=${data.orderId}`;
+ 
+  } catch (error) {
+    setError(error.message || 'PayPal payment error');
+    setOrderLoading(false);
+  }
+};
+ 
   // Submit order to Printful via our API route (kept for reference, now handled after Stripe payment)
   const submitOrder = async (e) => {
     e.preventDefault();
@@ -1624,6 +1667,54 @@ export default function StorePage() {
           </div>
         </>
       )}
+
+<button
+  onClick={handlePayPalCardCheckout}
+  disabled={orderLoading}
+  style={{
+    width: '100%',
+    padding: '18px',
+    background: orderLoading ? '#ccc' : '#ffc439',
+    color: '#111',
+    border: 'none',
+    borderRadius: '4px',
+    fontSize: '14px',
+    fontWeight: '700',
+    cursor: orderLoading ? 'not-allowed' : 'pointer',
+    transition: 'all 0.3s',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '12px',
+    letterSpacing: '1px',
+    textTransform: 'uppercase'
+  }}
+  onMouseEnter={(e) => {
+    if (!orderLoading) {
+      e.currentTarget.style.background = '#ffb800';
+      e.currentTarget.style.transform = 'translateY(-2px)';
+      e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 196, 57, 0.3)';
+    }
+  }}
+  onMouseLeave={(e) => {
+    if (!orderLoading) {
+      e.currentTarget.style.background = '#ffc439';
+      e.currentTarget.style.transform = 'translateY(0)';
+      e.currentTarget.style.boxShadow = 'none';
+    }
+  }}
+>
+  {orderLoading ? (
+    <>
+      <Loader size={20} style={{animation: 'spin 1s linear infinite'}} />
+      Processing...
+    </>
+  ) : (
+    <>
+      💳 Pay with PayPal Card (${cartTotal.toFixed(2)})
+    </>
+  )}
+</button>
 
       {/* Premium Modern Footer */}
       <footer style={{
