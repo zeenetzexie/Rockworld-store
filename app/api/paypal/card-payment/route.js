@@ -63,18 +63,7 @@ export async function POST(request) {
         ],
         payer: {
           email_address: email
-        },
-        payment_source: {
-          card: {
-            attributes: {
-              vault: {
-                store_in_vault: 'OFF_SESSION'
-              }
-            }
-          }
-        },
-        return_url: `${origin}/success?payment=paypal`,
-        cancel_url: `${origin}/`
+        }
       })
     });
 
