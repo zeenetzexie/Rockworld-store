@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Plus, Minus, X, Package, CreditCard, Loader } from 'lucide-react';
+import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 
 // Initialize Stripe only if key exists
 let stripePromise = null;
@@ -150,51 +151,6 @@ export default function StorePage() {
     }
   };
 
-const handlePayPalCardCheckout = async (e) => {
-  e.preventDefault();
-  setOrderLoading(true);
-  setError(null);
- 
-  try {
-    // Validate form
-    if (!checkoutForm.email || !checkoutForm.firstName || !checkoutForm.lastName) {
-      setError('Please fill in all required fields');
-      setOrderLoading(false);
-      return;
-    }
- 
-    // Call PayPal card payment route
-    const response = await fetch('/api/paypal/card-payment', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        amount: cartTotal,
-        currency: 'USD',
-        description: `ROCKWORLD Order - ${cart.length} items`,
-        email: checkoutForm.email,
-        orderId: `order-${Date.now()}`
-      })
-    });
- 
-    const data = await response.json();
- 
-    if (!response.ok || !data.success) {
-      throw new Error(data.error || 'PayPal payment initialization failed');
-    }
- 
-    // Redirect to PayPal's hosted checkout where customer enters card details
-    if (data.checkoutUrl) {
-      window.location.href = data.checkoutUrl;
-    } else {
-      throw new Error('No checkout URL provided');
-    }
- 
-  } catch (error) {
-    setError(error.message || 'PayPal payment error');
-    setOrderLoading(false);
-  }
-};
- 
   // Submit order to Printful via our API route (kept for reference, now handled after Stripe payment)
   const submitOrder = async (e) => {
     e.preventDefault();
@@ -1662,53 +1618,91 @@ const handlePayPalCardCheckout = async (e) => {
                         )}
                       </button>
                     )}
-<button
-  onClick={handlePayPalCardCheckout}
-  disabled={orderLoading}
-  style={{
-    width: '100%',
-    padding: '18px',
-    background: orderLoading ? '#ccc' : '#ffc439',
-    color: '#111',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '14px',
-    fontWeight: '700',
-    cursor: orderLoading ? 'not-allowed' : 'pointer',
-    transition: 'all 0.3s',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '12px',
-    letterSpacing: '1px',
-    textTransform: 'uppercase'
-  }}
-  onMouseEnter={(e) => {
-    if (!orderLoading) {
-      e.currentTarget.style.background = '#ffb800';
-      e.currentTarget.style.transform = 'translateY(-2px)';
-      e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 196, 57, 0.3)';
-    }
-  }}
-  onMouseLeave={(e) => {
-    if (!orderLoading) {
-      e.currentTarget.style.background = '#ffc439';
-      e.currentTarget.style.transform = 'translateY(0)';
-      e.currentTarget.style.boxShadow = 'none';
-    }
-  }}
->
-  {orderLoading ? (
-    <>
-      <Loader size={20} style={{animation: 'spin 1s linear infinite'}} />
-      Processing...
-    </>
-  ) : (
-    <>
-      💳 Pay with PayPal Card (${cartTotal.toFixed(2)})
-    </>
-  )}
-</button>
+
+                    {/* PayPal Button */}
+                    {process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ? (
+                      <div style={{
+                        marginTop: '8px',
+                        padding: '16px',
+                        background: '#f8f8f8',
+                        borderRadius: '8px'
+                      }}>
+                        <p style={{
+                          textAlign: 'center',
+                          marginBottom: '12px',
+                          fontSize: '14px',
+                          color: '#666',
+                          fontWeight: '600'
+                        }}>
+                          Or pay with PayPal:
+                        </p>
+                        <PayPalScriptProvider options={paypalOptions}>
+                          <PayPalButtons
+                            createOrder={async () => {
+                              try {
+                                const response = await fetch('/api/paypal/create-order', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ items: cart }),
+                                });
+                                const data = await response.json();
+                                if (data.error) throw new Error(data.error);
+                                return data.orderId;
+                              } catch (error) {
+                                console.error('PayPal create order error:', error);
+                                alert('Failed to create PayPal order. Please try again.');
+                                throw error;
+                              }
+                            }}
+                            onApprove={async (data) => {
+                              try {
+                                const response = await fetch('/api/paypal/capture-payment', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ orderId: data.orderID }),
+                                });
+                                const details = await response.json();
+                                if (details.error) throw new Error(details.error);
+                                
+                                // Clear cart and redirect to success
+                                setCart([]);
+                                window.location.href = `/success?paypal_order=${data.orderID}`;
+                              } catch (error) {
+                                console.error('PayPal capture error:', error);
+                                alert('Payment failed. Please contact support.');
+                              }
+                            }}
+                            onError={(error) => {
+                              console.error('PayPal error:', error);
+                              alert('PayPal checkout failed. Please try again.');
+                            }}
+                            style={{
+                              layout: 'vertical',
+                              color: 'gold',
+                              shape: 'rect',
+                              label: 'paypal',
+                            }}
+                          />
+                        </PayPalScriptProvider>
+                      </div>
+                    ) : (
+                      <div style={{
+                        marginTop: '16px',
+                        padding: '16px',
+                        background: '#fff3cd',
+                        border: '1px solid #ffc107',
+                        borderRadius: '8px',
+                        textAlign: 'center'
+                      }}>
+                        <p style={{
+                          fontSize: '14px',
+                          color: '#856404',
+                          margin: 0
+                        }}>
+                          💡 PayPal payment option will appear here once configured
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </form>
               )}
