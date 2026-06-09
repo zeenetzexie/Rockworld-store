@@ -1,7 +1,7 @@
 export async function GET() {
   const consumerKey = process.env.PESAPAL_CONSUMER_KEY;
   const consumerSecret = process.env.PESAPAL_CONSUMER_SECRET;
-  const apiBase = 'https://cybqa.pesapal.com/pesapalv3/api';
+  const apiBase = 'https://pay.pesapal.com/v3/api';
 
   // Get token
   const tokenRes = await fetch(`${apiBase}/Auth/RequestToken`, {
