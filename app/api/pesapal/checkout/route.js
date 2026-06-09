@@ -75,8 +75,11 @@ export async function POST(request) {
       redirectUrl: orderData.redirect_url  // v3 returns redirect_url directly
     });
 
-  } catch (error) {
-    console.error('Pesapal error:', error.message);
-    return Response.json({ error: error.message, success: false }, { status: 500 });
-  }
+ } catch (error) {
+  console.error('Pesapal full error:', error);
+  return Response.json({ 
+    error: error.message, 
+    success: false,
+    stack: error.stack  // shows us exactly where it crashed
+  }, { status: 500 });
 }
