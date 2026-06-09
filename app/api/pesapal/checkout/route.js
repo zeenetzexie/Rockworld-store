@@ -6,8 +6,9 @@ export async function POST(request) {
       return Response.json({ error: 'Invalid amount' }, { status: 400 });
     }
 
-    const consumerKey = process.env.NEXT_PUBLIC_PESAPAL_CONSUMER_KEY;
+    const consumerKey = process.env.PESAPAL_CONSUMER_KEY; // remove NEXT_PUBLIC_ - secret should never be public
     const consumerSecret = process.env.PESAPAL_CONSUMER_SECRET;
+    const ipnId = process.env.PESAPAL_IPN_ID; // add this after registering IPN above
 
     if (!consumerKey || !consumerSecret) {
       return Response.json({ error: 'Pesapal credentials missing' }, { status: 500 });
@@ -16,13 +17,13 @@ export async function POST(request) {
     const origin = request.headers.get('origin') || 'https://rockworld-store.vercel.app';
     const paymentId = orderId || `ROCKWORLD-${Date.now()}`;
 
-    // Pesapal sandbox API
-    const apiBase = 'https://testapi.pesapal.com/api';
+    // ✅ Correct v3 sandbox base
+    const apiBase = 'https://cybqa.pesapal.com/pesapalv3/api';
 
-    // Step 1: Get token
+    // Step 1: Get auth token
     const tokenRes = await fetch(`${apiBase}/Auth/RequestToken`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({
         consumer_key: consumerKey,
         consumer_secret: consumerSecret
@@ -30,43 +31,48 @@ export async function POST(request) {
     });
 
     if (!tokenRes.ok) {
-      throw new Error('Failed to get Pesapal token');
+      const err = await tokenRes.text();
+      throw new Error(`Token fetch failed: ${err}`);
     }
 
     const tokenData = await tokenRes.json();
     const token = tokenData.token;
 
-    // Step 2: Create order
-    const orderRes = await fetch(`${apiBase}/PostPesapalOrderDetails`, {
+    // Step 2: Submit order (v3 endpoint)
+    const orderRes = await fetch(`${apiBase}/Transactions/SubmitOrderRequest`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({
-        reference: paymentId,
+        id: paymentId,
+        currency: currency || 'ZMW', // ✅ use ZMW for Zambia
         amount: parseFloat(amount.toFixed(2)),
         description: 'ROCKWORLD Purchase',
-        type: 'MERCHANT',
-        first_name: firstName || 'Customer',
-        last_name: lastName || 'User',
-        email: email,
-        currency: currency || 'KES',
-        post_default_redirect_url: `${origin}/success?payment=pesapal&ref=${paymentId}`,
-        post_cancel_redirect_url: `${origin}/`
+        callback_url: `${origin}/success?payment=pesapal&ref=${paymentId}`,
+        cancellation_url: `${origin}/`,
+        notification_id: ipnId, // required in v3
+        billing_address: {
+          email_address: email,
+          first_name: firstName || 'Customer',
+          last_name: lastName || 'User'
+        }
       })
     });
 
     if (!orderRes.ok) {
-      throw new Error('Failed to create Pesapal order');
+      const err = await orderRes.text();
+      throw new Error(`Order submission failed: ${err}`);
     }
 
     const orderData = await orderRes.json();
 
     return Response.json({
       success: true,
-      reference: orderData.reference,
-      redirectUrl: `${apiBase.replace('/api', '')}/PostPesapalOrderDetails?ref=${orderData.reference}`
+      reference: orderData.order_tracking_id,
+      redirectUrl: orderData.redirect_url  // v3 returns redirect_url directly
     });
 
   } catch (error) {
