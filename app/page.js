@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Plus, Minus, X, Package, CreditCard, Loader } from 'lucide-react';
-import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 
 // Initialize Stripe only if key exists
 let stripePromise = null;
@@ -11,13 +10,6 @@ if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_
     stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
   });
 }
-
-// PayPal configuration
-const paypalOptions = {
-  'client-id': process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || '',
-  currency: 'USD',
-  intent: 'capture',
-};
 
 export default function StorePage() {
   const [products, setProducts] = useState([]);
@@ -116,99 +108,51 @@ export default function StorePage() {
   // Calculate total
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-  // Handle Stripe Checkout
-  const handleStripeCheckout = async () => {
+  // Handle Pesapal Checkout
+  const handlePesapalCheckout = async (e) => {
+    e.preventDefault();
     setOrderLoading(true);
     setError(null);
-    
+
     try {
-      // Create checkout session
-      const response = await fetch('/api/stripe/checkout', {
+      // Validate form
+      if (!checkoutForm.email || !checkoutForm.firstName || !checkoutForm.lastName) {
+        setError('Please fill in all required fields (First Name, Last Name, Email)');
+        setOrderLoading(false);
+        return;
+      }
+
+      // Call Pesapal payment route
+      const response = await fetch('/api/pesapal/checkout', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          items: cart,
-          customerEmail: checkoutForm.email || '',
-          shippingAddress: {
-            name: `${checkoutForm.firstName} ${checkoutForm.lastName}`,
-            address: checkoutForm.address,
-            city: checkoutForm.city,
-            state: checkoutForm.state,
-            country: checkoutForm.country,
-            zip: checkoutForm.zip
-          }
+          amount: cartTotal,
+          currency: 'KES',
+          email: checkoutForm.email,
+          firstName: checkoutForm.firstName,
+          lastName: checkoutForm.lastName,
+          orderId: `order-${Date.now()}`
         })
       });
 
-      const { sessionId, url, error: apiError } = await response.json();
-      
-      if (apiError) {
-        throw new Error(apiError);
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Pesapal payment initialization failed');
       }
 
-      // Redirect to Stripe Checkout
-      if (url) {
-        window.location.href = url;
+      // Redirect to Pesapal checkout
+      if (data.redirectUrl) {
+        window.location.href = data.redirectUrl;
+      } else {
+        throw new Error('No checkout URL provided by Pesapal');
       }
-    } catch (err) {
-      setError(err.message || 'Failed to start checkout');
+
+    } catch (error) {
+      setError(error.message || 'Pesapal payment error');
       setOrderLoading(false);
     }
-  };
-
-  const handlePesapalCheckout = async (e) => {
-  e.preventDefault();
-  setOrderLoading(true);
-  setError(null);
- 
-  try {
-    // Validate form
-    if (!checkoutForm.email || !checkoutForm.firstName || !checkoutForm.lastName) {
-      setError('Please fill in all required fields (First Name, Last Name, Email)');
-      setOrderLoading(false);
-      return;
-    }
- 
-    // Call Pesapal payment route
-    const response = await fetch('/api/pesapal/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        amount: cartTotal,
-        currency: 'KES',
-        email: checkoutForm.email,
-        firstName: checkoutForm.firstName,
-        lastName: checkoutForm.lastName,
-        orderId: `order-${Date.now()}`
-      })
-    });
- 
-    const data = await response.json();
- 
-    if (!response.ok || !data.success) {
-      throw new Error(data.error || 'Pesapal payment initialization failed');
-    }
- 
-    // Redirect to Pesapal checkout
-    if (data.redirectUrl) {
-      window.location.href = data.redirectUrl;
-    } else {
-      throw new Error('No checkout URL provided by Pesapal');
-    }
- 
-  } catch (error) {
-    setError(error.message || 'Pesapal payment error');
-    setOrderLoading(false);
-  }
-};
- 
-
-  // Submit order to Printful via our API route (kept for reference, now handled after Stripe payment)
-  const submitOrder = async (e) => {
-    e.preventDefault();
-    handleStripeCheckout();
   };
 
   return (
@@ -291,6 +235,26 @@ export default function StorePage() {
             transform: translateY(0);
           }
         }
+
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateX(100%);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
       `}</style>
       
       {/* Header */}
@@ -316,7 +280,6 @@ export default function StorePage() {
             alignItems: 'center',
             gap: '20px'
           }}>
-            {/* ROCKWORLD Circular Logo - Clean version without black corners */}
             <img 
               className="header-logo"
               src="/logo-header.png" 
@@ -328,7 +291,6 @@ export default function StorePage() {
               }}
             />
             
-            {/* ROCKWORLD Text with Metallic Embossed Effect */}
             <svg className="header-title" width="300" height="60" viewBox="0 0 300 60" xmlns="http://www.w3.org/2000/svg" style={{maxWidth: '100%', height: 'auto'}}>
               <defs>
                 <linearGradient id="textMetalGrad" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -338,34 +300,8 @@ export default function StorePage() {
                   <stop offset="75%" style={{stopColor: '#0a0a0a', stopOpacity: 1}} />
                   <stop offset="100%" style={{stopColor: '#000000', stopOpacity: 1}} />
                 </linearGradient>
-                
-                <filter id="textEmboss3d">
-                  <feGaussianBlur in="SourceAlpha" stdDeviation="1.5" result="blur"/>
-                  <feOffset in="blur" dx="2" dy="3" result="offsetBlur"/>
-                  <feSpecularLighting in="blur" surfaceScale="4" specularConstant="0.9" 
-                                      specularExponent="18" lightingColor="#ffffff" result="specOut">
-                    <fePointLight x="-150" y="-150" z="250"/>
-                  </feSpecularLighting>
-                  <feComposite in="specOut" in2="SourceAlpha" operator="in" result="specOut"/>
-                  <feComposite in="SourceGraphic" in2="specOut" operator="arithmetic" 
-                               k1="0" k2="1" k3="1" k4="0"/>
-                </filter>
-                
-                <filter id="textInnerShadow">
-                  <feOffset dx="0" dy="2"/>
-                  <feGaussianBlur stdDeviation="1.5" result="offset-blur"/>
-                  <feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse"/>
-                  <feFlood floodColor="#000000" floodOpacity="0.6" result="color"/>
-                  <feComposite operator="in" in="color" in2="inverse" result="shadow"/>
-                  <feComposite operator="over" in="shadow" in2="SourceGraphic"/>
-                </filter>
-                
-                <filter id="textDropShadow">
-                  <feDropShadow dx="2" dy="3" stdDeviation="2" floodOpacity="0.4"/>
-                </filter>
               </defs>
               
-              {/* Main text with gradient and emboss */}
               <text 
                 x="150" 
                 y="40" 
@@ -375,39 +311,8 @@ export default function StorePage() {
                 letterSpacing="5"
                 textAnchor="middle"
                 fill="url(#textMetalGrad)"
-                filter="url(#textEmboss3d)"
                 stroke="#000000"
                 strokeWidth="0.8">
-                ROCKWORLD
-              </text>
-              
-              {/* Top edge highlight */}
-              <text 
-                x="150" 
-                y="39" 
-                fontFamily="Archivo, sans-serif" 
-                fontSize="36" 
-                fontWeight="700" 
-                letterSpacing="5"
-                textAnchor="middle"
-                fill="none"
-                stroke="#555555"
-                strokeWidth="0.5"
-                opacity="0.6">
-                ROCKWORLD
-              </text>
-              
-              {/* Bottom shadow for depth */}
-              <text 
-                x="152" 
-                y="43" 
-                fontFamily="Archivo, sans-serif" 
-                fontSize="36" 
-                fontWeight="700" 
-                letterSpacing="5"
-                textAnchor="middle"
-                fill="#0a0a0a"
-                opacity="0.3">
                 ROCKWORLD
               </text>
             </svg>
@@ -625,7 +530,6 @@ export default function StorePage() {
                   {product.sync_variants.length} variant{product.sync_variants.length !== 1 ? 's' : ''} available
                 </p>
                 
-                {/* Price Range */}
                 <div style={{
                   fontSize: '24px',
                   fontWeight: '700',
@@ -639,7 +543,6 @@ export default function StorePage() {
                   }
                 </div>
 
-                {/* Select Options Button */}
                 <button
                   onClick={() => {
                     setSelectedProduct(product);
@@ -714,7 +617,6 @@ export default function StorePage() {
               gridTemplateColumns: '1fr 1fr',
               gap: 0
             }}>
-              {/* Left Side - Product Image */}
               <div style={{
                 background: '#f5f5f5',
                 padding: '40px',
@@ -734,9 +636,7 @@ export default function StorePage() {
                 />
               </div>
 
-              {/* Right Side - Variant Selection */}
               <div style={{ padding: '40px' }}>
-                {/* Close Button */}
                 <button
                   onClick={() => setShowVariantModal(false)}
                   style={{
@@ -764,7 +664,6 @@ export default function StorePage() {
                   <X size={20} />
                 </button>
 
-                {/* Product Name */}
                 <h2 style={{
                   fontSize: '28px',
                   fontWeight: '700',
@@ -775,7 +674,6 @@ export default function StorePage() {
                   {selectedProduct.sync_product.name}
                 </h2>
 
-                {/* Price */}
                 <div style={{
                   fontSize: '32px',
                   fontWeight: '700',
@@ -786,7 +684,6 @@ export default function StorePage() {
                   ${selectedVariant?.retail_price}
                 </div>
 
-                {/* Size Selection */}
                 <div style={{ marginBottom: '25px' }}>
                   <label style={{
                     display: 'block',
@@ -805,7 +702,6 @@ export default function StorePage() {
                     gap: '10px'
                   }}>
                     {(() => {
-                      // Group variants by size
                       const sizes = {};
                       selectedProduct.sync_variants.forEach(variant => {
                         const size = variant.name.split(' - ').pop();
@@ -850,65 +746,6 @@ export default function StorePage() {
                   </div>
                 </div>
 
-                {/* Color Selection (if variants have colors) */}
-                {(() => {
-                  const colors = {};
-                  selectedProduct.sync_variants.forEach(variant => {
-                    const parts = variant.name.split(' - ');
-                    if (parts.length > 1) {
-                      const color = parts[parts.length - 2];
-                      if (color && !colors[color]) {
-                        colors[color] = variant;
-                      }
-                    }
-                  });
-
-                  if (Object.keys(colors).length > 1) {
-                    return (
-                      <div style={{ marginBottom: '25px' }}>
-                        <label style={{
-                          display: 'block',
-                          fontSize: '14px',
-                          fontWeight: '700',
-                          marginBottom: '12px',
-                          textTransform: 'uppercase',
-                          letterSpacing: '1px',
-                          color: '#333'
-                        }}>
-                          Select Color:
-                        </label>
-                        <div style={{
-                          display: 'flex',
-                          flexWrap: 'wrap',
-                          gap: '10px'
-                        }}>
-                          {Object.entries(colors).map(([color, variant]) => (
-                            <button
-                              key={variant.id}
-                              onClick={() => setSelectedVariant(variant)}
-                              style={{
-                                padding: '12px 20px',
-                                background: selectedVariant?.name.includes(color) ? '#000' : 'white',
-                                color: selectedVariant?.name.includes(color) ? 'white' : '#000',
-                                border: selectedVariant?.name.includes(color) ? '2px solid #000' : '2px solid #e0e0e0',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '14px',
-                                fontWeight: '600',
-                                transition: 'all 0.2s'
-                              }}
-                            >
-                              {color}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-
-                {/* Variant Details */}
                 <div style={{
                   padding: '20px',
                   background: '#f8f8f8',
@@ -926,7 +763,6 @@ export default function StorePage() {
                   </div>
                 </div>
 
-                {/* Add to Cart Button */}
                 <button
                   onClick={() => {
                     addToCart(selectedProduct, selectedVariant);
@@ -965,7 +801,6 @@ export default function StorePage() {
                   Add to Cart - ${selectedVariant?.retail_price}
                 </button>
 
-                {/* Product Info */}
                 <div style={{
                   marginTop: '30px',
                   padding: '20px',
@@ -1256,7 +1091,7 @@ export default function StorePage() {
         </>
       )}
 
-      {/* Checkout Modal */}
+      {/* Checkout Modal - PESAPAL ONLY */}
       {isCheckoutOpen && (
         <>
           <div
@@ -1322,800 +1157,300 @@ export default function StorePage() {
               overflowY: 'auto',
               padding: '30px'
             }}>
-              {orderSuccess ? (
+              <form onSubmit={handlePesapalCheckout}>
                 <div style={{
-                  textAlign: 'center',
-                  padding: '60px 20px'
+                  display: 'grid',
+                  gap: '20px'
                 }}>
-                  <div style={{
-                    width: '80px',
-                    height: '80px',
-                    background: '#4caf50',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    margin: '0 auto 20px'
-                  }}>
-                    <Package size={40} color="white" />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '8px',
+                        fontSize: '14px',
+                        fontWeight: '600'
+                      }}>
+                        First Name *
+                      </label>
+                      <input
+                        required
+                        value={checkoutForm.firstName}
+                        onChange={(e) => setCheckoutForm({...checkoutForm, firstName: e.target.value})}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '2px solid #e0e0e0',
+                          borderRadius: '8px',
+                          fontSize: '16px',
+                          fontFamily: 'inherit'
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '8px',
+                        fontSize: '14px',
+                        fontWeight: '600'
+                      }}>
+                        Last Name *
+                      </label>
+                      <input
+                        required
+                        value={checkoutForm.lastName}
+                        onChange={(e) => setCheckoutForm({...checkoutForm, lastName: e.target.value})}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '2px solid #e0e0e0',
+                          borderRadius: '8px',
+                          fontSize: '16px',
+                          fontFamily: 'inherit'
+                        }}
+                      />
+                    </div>
                   </div>
-                  <h3 style={{
-                    fontSize: '24px',
-                    fontWeight: '700',
-                    marginBottom: '10px'
-                  }}>
-                    Order Placed!
-                  </h3>
-                  <p style={{ color: '#666' }}>
-                    Your order has been submitted to Printful for fulfillment.
-                  </p>
-                </div>
-              ) : (
-                <form onSubmit={submitOrder}>
-                  <div style={{
-                    display: 'grid',
-                    gap: '20px'
-                  }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                      <div>
-                        <label style={{
-                          display: 'block',
-                          marginBottom: '8px',
-                          fontSize: '14px',
-                          fontWeight: '600'
-                        }}>
-                          First Name *
-                        </label>
-                        <input
-                          required
-                          value={checkoutForm.firstName}
-                          onChange={(e) => setCheckoutForm({...checkoutForm, firstName: e.target.value})}
-                          style={{
-                            width: '100%',
-                            padding: '12px',
-                            border: '2px solid #e0e0e0',
-                            borderRadius: '8px',
-                            fontSize: '16px',
-                            fontFamily: 'inherit'
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label style={{
-                          display: 'block',
-                          marginBottom: '8px',
-                          fontSize: '14px',
-                          fontWeight: '600'
-                        }}>
-                          Last Name *
-                        </label>
-                        <input
-                          required
-                          value={checkoutForm.lastName}
-                          onChange={(e) => setCheckoutForm({...checkoutForm, lastName: e.target.value})}
-                          style={{
-                            width: '100%',
-                            padding: '12px',
-                            border: '2px solid #e0e0e0',
-                            borderRadius: '8px',
-                            fontSize: '16px',
-                            fontFamily: 'inherit'
-                          }}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label style={{
-                        display: 'block',
-                        marginBottom: '8px',
-                        fontSize: '14px',
-                        fontWeight: '600'
-                      }}>
-                        Email *
-                      </label>
-                      <input
-                        required
-                        type="email"
-                        value={checkoutForm.email}
-                        onChange={(e) => setCheckoutForm({...checkoutForm, email: e.target.value})}
-                        style={{
-                          width: '100%',
-                          padding: '12px',
-                          border: '2px solid #e0e0e0',
-                          borderRadius: '8px',
-                          fontSize: '16px',
-                          fontFamily: 'inherit'
-                        }}
-                      />
-                    </div>
-                    
-                    <div>
-                      <label style={{
-                        display: 'block',
-                        marginBottom: '8px',
-                        fontSize: '14px',
-                        fontWeight: '600'
-                      }}>
-                        Address *
-                      </label>
-                      <input
-                        required
-                        value={checkoutForm.address}
-                        onChange={(e) => setCheckoutForm({...checkoutForm, address: e.target.value})}
-                        style={{
-                          width: '100%',
-                          padding: '12px',
-                          border: '2px solid #e0e0e0',
-                          borderRadius: '8px',
-                          fontSize: '16px',
-                          fontFamily: 'inherit'
-                        }}
-                      />
-                    </div>
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px' }}>
-                      <div>
-                        <label style={{
-                          display: 'block',
-                          marginBottom: '8px',
-                          fontSize: '14px',
-                          fontWeight: '600'
-                        }}>
-                          Country *
-                        </label>
-                        <select
-                          required
-                          value={checkoutForm.country}
-                          onChange={(e) => setCheckoutForm({...checkoutForm, country: e.target.value})}
-                          style={{
-                            width: '100%',
-                            padding: '12px',
-                            border: '2px solid #e0e0e0',
-                            borderRadius: '8px',
-                            fontSize: '16px',
-                            fontFamily: 'inherit',
-                            background: 'white'
-                          }}
-                        >
-                          <option value="US">United States</option>
-                          <option value="CA">Canada</option>
-                          <option value="GB">United Kingdom</option>
-                          <option value="AU">Australia</option>
-                          <option value="ZM">Zambia</option>
-                          <option value="ZA">South Africa</option>
-                          <option value="KE">Kenya</option>
-                          <option value="NG">Nigeria</option>
-                          <option value="GH">Ghana</option>
-                          <option value="UG">Uganda</option>
-                          <option value="TZ">Tanzania</option>
-                          <option value="DE">Germany</option>
-                          <option value="FR">France</option>
-                          <option value="ES">Spain</option>
-                          <option value="IT">Italy</option>
-                          <option value="NL">Netherlands</option>
-                          <option value="BE">Belgium</option>
-                          <option value="CH">Switzerland</option>
-                          <option value="AT">Austria</option>
-                          <option value="SE">Sweden</option>
-                          <option value="NO">Norway</option>
-                          <option value="DK">Denmark</option>
-                          <option value="FI">Finland</option>
-                          <option value="IE">Ireland</option>
-                          <option value="PL">Poland</option>
-                          <option value="CZ">Czech Republic</option>
-                          <option value="PT">Portugal</option>
-                          <option value="GR">Greece</option>
-                          <option value="JP">Japan</option>
-                          <option value="CN">China</option>
-                          <option value="IN">India</option>
-                          <option value="SG">Singapore</option>
-                          <option value="MY">Malaysia</option>
-                          <option value="TH">Thailand</option>
-                          <option value="PH">Philippines</option>
-                          <option value="ID">Indonesia</option>
-                          <option value="VN">Vietnam</option>
-                          <option value="NZ">New Zealand</option>
-                          <option value="MX">Mexico</option>
-                          <option value="BR">Brazil</option>
-                          <option value="AR">Argentina</option>
-                          <option value="CL">Chile</option>
-                          <option value="CO">Colombia</option>
-                          <option value="AE">United Arab Emirates</option>
-                          <option value="SA">Saudi Arabia</option>
-                          <option value="IL">Israel</option>
-                          <option value="TR">Turkey</option>
-                          <option value="EG">Egypt</option>
-                          <option value="ZW">Zimbabwe</option>
-                          <option value="BW">Botswana</option>
-                          <option value="NA">Namibia</option>
-                          <option value="MW">Malawi</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label style={{
-                          display: 'block',
-                          marginBottom: '8px',
-                          fontSize: '14px',
-                          fontWeight: '600'
-                        }}>
-                          ZIP / Postal Code *
-                        </label>
-                        <input
-                          required
-                          value={checkoutForm.zip}
-                          onChange={(e) => setCheckoutForm({...checkoutForm, zip: e.target.value})}
-                          placeholder="12345"
-                          style={{
-                            width: '100%',
-                            padding: '12px',
-                            border: '2px solid #e0e0e0',
-                            borderRadius: '8px',
-                            fontSize: '16px',
-                            fontFamily: 'inherit'
-                          }}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                      <div>
-                        <label style={{
-                          display: 'block',
-                          marginBottom: '8px',
-                          fontSize: '14px',
-                          fontWeight: '600'
-                        }}>
-                          City *
-                        </label>
-                        <input
-                          required
-                          value={checkoutForm.city}
-                          onChange={(e) => setCheckoutForm({...checkoutForm, city: e.target.value})}
-                          style={{
-                            width: '100%',
-                            padding: '12px',
-                            border: '2px solid #e0e0e0',
-                            borderRadius: '8px',
-                            fontSize: '16px',
-                            fontFamily: 'inherit'
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label style={{
-                          display: 'block',
-                          marginBottom: '8px',
-                          fontSize: '14px',
-                          fontWeight: '600'
-                        }}>
-                          State / Province
-                        </label>
-                        <input
-                          value={checkoutForm.state}
-                          onChange={(e) => setCheckoutForm({...checkoutForm, state: e.target.value})}
-                          placeholder="Optional"
-                          style={{
-                            width: '100%',
-                            padding: '12px',
-                            border: '2px solid #e0e0e0',
-                            borderRadius: '8px',
-                            fontSize: '16px',
-                            fontFamily: 'inherit'
-                          }}
-                        />
-                      </div>
-                    </div>
-                    
-                    {error && (
-                      <div style={{
+                  
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      marginBottom: '8px',
+                      fontSize: '14px',
+                      fontWeight: '600'
+                    }}>
+                      Email *
+                    </label>
+                    <input
+                      required
+                      type="email"
+                      value={checkoutForm.email}
+                      onChange={(e) => setCheckoutForm({...checkoutForm, email: e.target.value})}
+                      style={{
+                        width: '100%',
                         padding: '12px',
-                        background: '#fee',
-                        border: '1px solid #fcc',
+                        border: '2px solid #e0e0e0',
                         borderRadius: '8px',
-                        color: '#c00',
-                        fontSize: '14px'
+                        fontSize: '16px',
+                        fontFamily: 'inherit'
+                      }}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      marginBottom: '8px',
+                      fontSize: '14px',
+                      fontWeight: '600'
+                    }}>
+                      Address *
+                    </label>
+                    <input
+                      required
+                      value={checkoutForm.address}
+                      onChange={(e) => setCheckoutForm({...checkoutForm, address: e.target.value})}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '2px solid #e0e0e0',
+                        borderRadius: '8px',
+                        fontSize: '16px',
+                        fontFamily: 'inherit'
+                      }}
+                    />
+                  </div>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px' }}>
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '8px',
+                        fontSize: '14px',
+                        fontWeight: '600'
                       }}>
-                        {error}
-                      </div>
-                    )}
-                    
-                    {/* Stripe Button - Only show if configured */}
-                    {process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY && (
-                      <button
-                        type="submit"
-                        disabled={orderLoading}
+                        Country *
+                      </label>
+                      <select
+                        required
+                        value={checkoutForm.country}
+                        onChange={(e) => setCheckoutForm({...checkoutForm, country: e.target.value})}
                         style={{
                           width: '100%',
-                          padding: '18px',
-                          background: orderLoading ? '#ccc' : '#000000',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          fontSize: '14px',
-                          fontWeight: '700',
-                          cursor: orderLoading ? 'not-allowed' : 'pointer',
-                          transition: 'all 0.3s',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '12px',
-                          letterSpacing: '1px',
-                          textTransform: 'uppercase',
-                          marginBottom: '16px'
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!orderLoading) {
-                            e.currentTarget.style.background = '#333';
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!orderLoading) {
-                            e.currentTarget.style.background = '#000000';
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = 'none';
-                          }
+                          padding: '12px',
+                          border: '2px solid #e0e0e0',
+                          borderRadius: '8px',
+                          fontSize: '16px',
+                          fontFamily: 'inherit',
+                          background: 'white'
                         }}
                       >
-                        {orderLoading ? (
-                          <>
-                            <Loader size={20} style={{animation: 'spin 1s linear infinite'}} />
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            <CreditCard size={20} />
-                            Pay with Stripe (${cartTotal.toFixed(2)})
-                          </>
-                        )}
-                      </button>
-                    )}
-
-                    <button
-  onClick={handlePesapalCheckout}
-  disabled={orderLoading}
-  style={{
-    width: '100%',
-    padding: '18px',
-    background: orderLoading ? '#ccc' : '#10B981',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '14px',
-    fontWeight: '700',
-    cursor: orderLoading ? 'not-allowed' : 'pointer',
-    transition: 'all 0.3s',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '12px',
-    letterSpacing: '1px',
-    textTransform: 'uppercase',
-    marginTop: '12px'
-  }}
-  onMouseEnter={(e) => {
-    if (!orderLoading) {
-      e.currentTarget.style.background = '#059669';
-      e.currentTarget.style.transform = 'translateY(-2px)';
-      e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
-    }
-  }}
-  onMouseLeave={(e) => {
-    if (!orderLoading) {
-      e.currentTarget.style.background = '#10B981';
-      e.currentTarget.style.transform = 'translateY(0)';
-      e.currentTarget.style.boxShadow = 'none';
-    }
-  }}
->
-  {orderLoading ? (
-    <>
-      <Loader size={20} style={{animation: 'spin 1s linear infinite'}} />
-      Processing...
-    </>
-  ) : (
-    <>
-      🇿🇲 Pay with Pesapal (${cartTotal.toFixed(2)})
-    </>
-  )}
-</button>
-                        </p>
-                      </div>
-                    )}
+                        <option value="ZM">Zambia</option>
+                        <option value="US">United States</option>
+                        <option value="CA">Canada</option>
+                        <option value="GB">United Kingdom</option>
+                        <option value="AU">Australia</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '8px',
+                        fontSize: '14px',
+                        fontWeight: '600'
+                      }}>
+                        ZIP / Postal Code *
+                      </label>
+                      <input
+                        required
+                        value={checkoutForm.zip}
+                        onChange={(e) => setCheckoutForm({...checkoutForm, zip: e.target.value})}
+                        placeholder="12345"
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '2px solid #e0e0e0',
+                          borderRadius: '8px',
+                          fontSize: '16px',
+                          fontFamily: 'inherit'
+                        }}
+                      />
+                    </div>
                   </div>
-                </form>
-              )}
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '8px',
+                        fontSize: '14px',
+                        fontWeight: '600'
+                      }}>
+                        City *
+                      </label>
+                      <input
+                        required
+                        value={checkoutForm.city}
+                        onChange={(e) => setCheckoutForm({...checkoutForm, city: e.target.value})}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '2px solid #e0e0e0',
+                          borderRadius: '8px',
+                          fontSize: '16px',
+                          fontFamily: 'inherit'
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '8px',
+                        fontSize: '14px',
+                        fontWeight: '600'
+                      }}>
+                        State / Province
+                      </label>
+                      <input
+                        value={checkoutForm.state}
+                        onChange={(e) => setCheckoutForm({...checkoutForm, state: e.target.value})}
+                        placeholder="Optional"
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '2px solid #e0e0e0',
+                          borderRadius: '8px',
+                          fontSize: '16px',
+                          fontFamily: 'inherit'
+                        }}
+                      />
+                    </div>
+                  </div>
+                  
+                  {error && (
+                    <div style={{
+                      padding: '12px',
+                      background: '#fee',
+                      border: '1px solid #fcc',
+                      borderRadius: '8px',
+                      color: '#c00',
+                      fontSize: '14px'
+                    }}>
+                      {error}
+                    </div>
+                  )}
+                  
+                  <button
+                    type="submit"
+                    disabled={orderLoading}
+                    style={{
+                      width: '100%',
+                      padding: '18px',
+                      background: orderLoading ? '#ccc' : '#10B981',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      fontWeight: '700',
+                      cursor: orderLoading ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.3s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '12px',
+                      letterSpacing: '1px',
+                      textTransform: 'uppercase'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!orderLoading) {
+                        e.currentTarget.style.background = '#059669';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!orderLoading) {
+                        e.currentTarget.style.background = '#10B981';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }
+                    }}
+                  >
+                    {orderLoading ? (
+                      <>
+                        <Loader size={20} style={{animation: 'spin 1s linear infinite'}} />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        🇿🇲 Pay with Pesapal (${cartTotal.toFixed(2)})
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </>
       )}
 
-      {/* Premium Modern Footer */}
+      {/* Footer */}
       <footer style={{
         background: 'linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%)',
         color: 'white',
         marginTop: '100px',
-        position: 'relative',
-        overflow: 'hidden'
+        padding: '80px 40px 40px',
+        textAlign: 'center',
+        fontSize: '14px',
+        color: 'rgba(255,255,255,0.6)'
       }}>
-        {/* Subtle background pattern */}
         <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.03) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.02) 0%, transparent 50%)',
-          pointerEvents: 'none'
-        }}/>
-        
-        <div className="footer-container" style={{
           maxWidth: '1400px',
           margin: '0 auto',
-          padding: '80px 40px 40px',
-          position: 'relative',
-          zIndex: 1
+          paddingBottom: '30px',
+          borderBottom: '1px solid rgba(255,255,255,0.1)'
         }}>
-          {/* Main Footer Content */}
-          <div className="footer-grid" style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '60px',
-            marginBottom: '60px'
-          }}>
-            {/* Brand Column */}
-            <div>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '15px',
-                marginBottom: '25px'
-              }}>
-                <img 
-                  src="/logo.png" 
-                  alt="ROCKWORLD" 
-                  style={{
-                    width: '45px',
-                    height: '45px',
-                    objectFit: 'contain',
-                    filter: 'brightness(0) invert(1)'
-                  }}
-                />
-                <span style={{
-                  fontSize: '26px',
-                  fontWeight: '700',
-                  letterSpacing: '3px',
-                  fontFamily: '"Archivo", sans-serif'
-                }}>
-                  ROCKWORLD
-                </span>
-              </div>
-              <p style={{
-                fontSize: '15px',
-                lineHeight: '1.8',
-                color: 'rgba(255,255,255,0.7)',
-                marginBottom: '25px'
-              }}>
-                Premium print-on-demand products crafted with precision and delivered worldwide.
-              </p>
-              {/* Social Links */}
-              <div style={{
-                display: 'flex',
-                gap: '15px'
-              }}>
-                <a
-                  href="https://www.facebook.com/Zexienazarithe2nd/about/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    width: '42px',
-                    height: '42px',
-                    borderRadius: '50%',
-                    background: 'rgba(255,255,255,0.08)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.3s',
-                    textDecoration: 'none',
-                    color: 'white',
-                    fontSize: '18px',
-                    border: '1px solid rgba(255,255,255,0.1)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'white';
-                    e.currentTarget.style.color = 'black';
-                    e.currentTarget.style.transform = 'translateY(-3px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-                    e.currentTarget.style.color = 'white';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }}
-                  title="Facebook"
-                >
-                  F
-                </a>
-                <a
-                  href="mailto:rockworldstore@outlook.com"
-                  style={{
-                    width: '42px',
-                    height: '42px',
-                    borderRadius: '50%',
-                    background: 'rgba(255,255,255,0.08)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.3s',
-                    textDecoration: 'none',
-                    color: 'white',
-                    fontSize: '18px',
-                    border: '1px solid rgba(255,255,255,0.1)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'white';
-                    e.currentTarget.style.color = 'black';
-                    e.currentTarget.style.transform = 'translateY(-3px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-                    e.currentTarget.style.color = 'white';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }}
-                  title="Email Us"
-                >
-                  @
-                </a>
-                <a
-                  href="tel:+260975473982"
-                  style={{
-                    width: '42px',
-                    height: '42px',
-                    borderRadius: '50%',
-                    background: 'rgba(255,255,255,0.08)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.3s',
-                    textDecoration: 'none',
-                    color: 'white',
-                    fontSize: '18px',
-                    border: '1px solid rgba(255,255,255,0.1)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'white';
-                    e.currentTarget.style.color = 'black';
-                    e.currentTarget.style.transform = 'translateY(-3px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-                    e.currentTarget.style.color = 'white';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }}
-                  title="Call Us"
-                >
-                  ☎
-                </a>
-              </div>
-            </div>
-
-            {/* Quick Links */}
-            <div>
-              <h3 style={{
-                fontSize: '16px',
-                fontWeight: '700',
-                letterSpacing: '2px',
-                textTransform: 'uppercase',
-                marginBottom: '25px',
-                color: 'white'
-              }}>
-                Quick Links
-              </h3>
-              <ul style={{
-                listStyle: 'none',
-                padding: 0,
-                margin: 0
-              }}>
-                {[
-                  { name: 'Shop All', href: '/' },
-                  { name: 'About Us', href: '/about' },
-                  { name: 'Contact', href: '/contact' },
-                  { name: 'Order Now', href: '/order' }
-                ].map((link) => (
-                  <li key={link.name} style={{ marginBottom: '15px' }}>
-                    <a
-                      href={link.href}
-                      style={{
-                        color: 'rgba(255,255,255,0.7)',
-                        textDecoration: 'none',
-                        fontSize: '15px',
-                        transition: 'all 0.3s',
-                        display: 'inline-block',
-                        position: 'relative'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.color = 'white';
-                        e.currentTarget.style.paddingLeft = '8px';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
-                        e.currentTarget.style.paddingLeft = '0';
-                      }}
-                    >
-                      {link.name}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Customer Service */}
-            <div>
-              <h3 style={{
-                fontSize: '16px',
-                fontWeight: '700',
-                letterSpacing: '2px',
-                textTransform: 'uppercase',
-                marginBottom: '25px',
-                color: 'white'
-              }}>
-                Support
-              </h3>
-              <ul style={{
-                listStyle: 'none',
-                padding: 0,
-                margin: 0
-              }}>
-                {[
-                  'Shipping Info',
-                  'Returns',
-                  'FAQ',
-                  'Size Guide',
-                  'Track Order'
-                ].map((item) => (
-                  <li key={item} style={{ marginBottom: '15px' }}>
-                    <a
-                      href="#"
-                      style={{
-                        color: 'rgba(255,255,255,0.7)',
-                        textDecoration: 'none',
-                        fontSize: '15px',
-                        transition: 'all 0.3s',
-                        display: 'inline-block'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.color = 'white';
-                        e.currentTarget.style.paddingLeft = '8px';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
-                        e.currentTarget.style.paddingLeft = '0';
-                      }}
-                    >
-                      {item}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Newsletter */}
-            <div>
-              <h3 style={{
-                fontSize: '16px',
-                fontWeight: '700',
-                letterSpacing: '2px',
-                textTransform: 'uppercase',
-                marginBottom: '25px',
-                color: 'white'
-              }}>
-                Stay Updated
-              </h3>
-              <p style={{
-                fontSize: '14px',
-                lineHeight: '1.6',
-                color: 'rgba(255,255,255,0.7)',
-                marginBottom: '20px'
-              }}>
-                Subscribe to get special offers, free giveaways, and updates.
-              </p>
-              <div style={{
-                display: 'flex',
-                gap: '10px'
-              }}>
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  style={{
-                    flex: 1,
-                    padding: '14px 18px',
-                    background: 'rgba(255,255,255,0.08)',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    borderRadius: '8px',
-                    color: 'white',
-                    fontSize: '14px',
-                    outline: 'none',
-                    transition: 'all 0.3s'
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)';
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-                  }}
-                />
-                <button
-                  style={{
-                    padding: '14px 24px',
-                    background: 'white',
-                    color: 'black',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s',
-                    letterSpacing: '0.5px'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 8px 20px rgba(255,255,255,0.2)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                >
-                  Join
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Bar */}
-          <div style={{
-            paddingTop: '30px',
-            borderTop: '1px solid rgba(255,255,255,0.1)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '20px'
-          }}>
-            <p style={{
-              fontSize: '14px',
-              color: 'rgba(255,255,255,0.5)',
-              margin: 0
-            }}>
-              © {new Date().getFullYear()} ROCKWORLD. All rights reserved.
-            </p>
-            
-            <div style={{
-              display: 'flex',
-              gap: '30px',
-              flexWrap: 'wrap'
-            }}>
-              {['Privacy Policy', 'Terms of Service', 'Cookies'].map((item) => (
-                <a
-                  key={item}
-                  href="#"
-                  style={{
-                    color: 'rgba(255,255,255,0.5)',
-                    textDecoration: 'none',
-                    fontSize: '14px',
-                    transition: 'color 0.3s'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
-                >
-                  {item}
-                </a>
-              ))}
-            </div>
-          </div>
+          <p>© {new Date().getFullYear()} ROCKWORLD. All rights reserved.</p>
+          <p>Contact: rockworldstore@outlook.com | +260 975 473 982</p>
         </div>
       </footer>
     </div>
