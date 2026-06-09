@@ -76,10 +76,11 @@ export async function POST(request) {
     });
 
  } catch (error) {
-  console.error('Pesapal full error:', error);
-  return Response.json({ 
-    error: error.message, 
-    success: false,
-    stack: error.stack  // shows us exactly where it crashed
-  }, { status: 500 });
+    console.error('Pesapal full error:', error);
+    return Response.json({ 
+      error: error.message, 
+      success: false,
+      stack: error.stack
+    }, { status: 500 });
+  }
 }
