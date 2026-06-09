@@ -18,7 +18,7 @@ export async function POST(request) {
     const paymentId = orderId || `ROCKWORLD-${Date.now()}`;
 
     // ✅ Correct v3 sandbox base
-    const apiBase = 'https://cybqa.pesapal.com/pesapalv3/api';
+    const apiBase = 'https://pay.pesapal.com/v3/api';
 
     // Step 1: Get auth token
     const tokenRes = await fetch(`${apiBase}/Auth/RequestToken`, {
