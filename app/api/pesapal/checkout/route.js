@@ -1,14 +1,17 @@
 export async function POST(request) {
   try {
-    const { amount, currency, email, firstName, lastName, orderId } = await request.json();
+    const { 
+      amount, currency, email, firstName, lastName, orderId,
+      cartItems, shippingAddress  // ← add these two
+    } = await request.json();
 
     if (!amount || amount <= 0) {
       return Response.json({ error: 'Invalid amount' }, { status: 400 });
     }
 
-    const consumerKey = process.env.PESAPAL_CONSUMER_KEY; // remove NEXT_PUBLIC_ - secret should never be public
+    const consumerKey = process.env.PESAPAL_CONSUMER_KEY;
     const consumerSecret = process.env.PESAPAL_CONSUMER_SECRET;
-    const ipnId = process.env.PESAPAL_IPN_ID; // add this after registering IPN above
+    const ipnId = process.env.PESAPAL_IPN_ID;
 
     if (!consumerKey || !consumerSecret) {
       return Response.json({ error: 'Pesapal credentials missing' }, { status: 500 });
@@ -17,28 +20,20 @@ export async function POST(request) {
     const origin = request.headers.get('origin') || 'https://rockworld-store.vercel.app';
     const paymentId = orderId || `ROCKWORLD-${Date.now()}`;
 
-    // ✅ Correct v3 sandbox base
+    // Encode cart + shipping into callback URL so /success can use it
+    const orderPayload = encodeURIComponent(JSON.stringify({ cartItems, shippingAddress, email, firstName, lastName }));
+
     const apiBase = 'https://pay.pesapal.com/v3/api';
 
-    // Step 1: Get auth token
     const tokenRes = await fetch(`${apiBase}/Auth/RequestToken`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({
-        consumer_key: consumerKey,
-        consumer_secret: consumerSecret
-      })
+      body: JSON.stringify({ consumer_key: consumerKey, consumer_secret: consumerSecret })
     });
 
-    if (!tokenRes.ok) {
-      const err = await tokenRes.text();
-      throw new Error(`Token fetch failed: ${err}`);
-    }
+    if (!tokenRes.ok) throw new Error(`Token fetch failed: ${await tokenRes.text()}`);
+    const { token } = await tokenRes.json();
 
-    const tokenData = await tokenRes.json();
-    const token = tokenData.token;
-
-    // Step 2: Submit order (v3 endpoint)
     const orderRes = await fetch(`${apiBase}/Transactions/SubmitOrderRequest`, {
       method: 'POST',
       headers: {
@@ -48,12 +43,13 @@ export async function POST(request) {
       },
       body: JSON.stringify({
         id: paymentId,
-        currency: currency || 'ZMW', // ✅ use ZMW for Zambia
+        currency: currency || 'ZMW',
         amount: parseFloat(amount.toFixed(2)),
         description: 'ROCKWORLD Purchase',
-        callback_url: `${origin}/success?payment=pesapal&ref=${paymentId}`,
+        // ✅ carry order data in the callback URL
+        callback_url: `${origin}/success?payment=pesapal&ref=${paymentId}&order=${orderPayload}`,
         cancellation_url: `${origin}/`,
-        notification_id: ipnId, // required in v3
+        notification_id: ipnId,
         billing_address: {
           email_address: email,
           first_name: firstName || 'Customer',
@@ -62,25 +58,17 @@ export async function POST(request) {
       })
     });
 
-    if (!orderRes.ok) {
-      const err = await orderRes.text();
-      throw new Error(`Order submission failed: ${err}`);
-    }
-
+    if (!orderRes.ok) throw new Error(`Order submission failed: ${await orderRes.text()}`);
     const orderData = await orderRes.json();
 
     return Response.json({
       success: true,
       reference: orderData.order_tracking_id,
-      redirectUrl: orderData.redirect_url  // v3 returns redirect_url directly
+      redirectUrl: orderData.redirect_url
     });
 
- } catch (error) {
-    console.error('Pesapal full error:', error);
-    return Response.json({ 
-      error: error.message, 
-      success: false,
-      stack: error.stack
-    }, { status: 500 });
+  } catch (error) {
+    console.error('Pesapal error:', error);
+    return Response.json({ error: error.message, success: false, stack: error.stack }, { status: 500 });
   }
 }
