@@ -43,7 +43,7 @@ export async function POST(request) {
       },
       body: JSON.stringify({
         id: paymentId,
-        currency: currency || 'USD','
+        currency: currency || 'USD',
         amount: parseFloat(amount.toFixed(2)),
         description: 'ROCKWORLD Purchase',
         // ✅ carry order data in the callback URL
