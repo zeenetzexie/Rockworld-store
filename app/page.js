@@ -127,14 +127,24 @@ export default function StorePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: cartTotal,
-          currency: 'KES',
-          email: checkoutForm.email,
-          firstName: checkoutForm.firstName,
-          lastName: checkoutForm.lastName,
-          orderId: `order-${Date.now()}`
-        })
-      });
+  amount: cartTotal,
+  currency: 'USD',
+  email: checkoutForm.email,
+  firstName: checkoutForm.firstName,
+  lastName: checkoutForm.lastName,
+  orderId: `order-${Date.now()}`,
+  cartItems: cart.map(item => ({
+    variantId: item.variantId,
+    quantity: item.quantity
+  })),
+  shippingAddress: {
+    address: checkoutForm.address,
+    city: checkoutForm.city,
+    state: checkoutForm.state,
+    zip: checkoutForm.zip,
+    countryCode: checkoutForm.country
+  }
+})
 
       const data = await response.json();
 
