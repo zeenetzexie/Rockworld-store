@@ -109,61 +109,59 @@ export default function StorePage() {
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
   // Handle Pesapal Checkout
-  const handlePesapalCheckout = async (e) => {
-    e.preventDefault();
-    setOrderLoading(true);
-    setError(null);
+ const handlePesapalCheckout = async (e) => {
+  e.preventDefault();
+  setOrderLoading(true);
+  setError(null);
 
-    try {
-      // Validate form
-      if (!checkoutForm.email || !checkoutForm.firstName || !checkoutForm.lastName) {
-        setError('Please fill in all required fields (First Name, Last Name, Email)');
-        setOrderLoading(false);
-        return;
-      }
-
-      // Call Pesapal payment route
-      const response = await fetch('/api/pesapal/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-  amount: cartTotal,
-  currency: 'USD',
-  email: checkoutForm.email,
-  firstName: checkoutForm.firstName,
-  lastName: checkoutForm.lastName,
-  orderId: `order-${Date.now()}`,
-  cartItems: cart.map(item => ({
-    variantId: item.variantId,
-    quantity: item.quantity
-  })),
-  shippingAddress: {
-    address: checkoutForm.address,
-    city: checkoutForm.city,
-    state: checkoutForm.state,
-    zip: checkoutForm.zip,
-    countryCode: checkoutForm.country
-  }
-})
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Pesapal payment initialization failed');
-      }
-
-      // Redirect to Pesapal checkout
-      if (data.redirectUrl) {
-        window.location.href = data.redirectUrl;
-      } else {
-        throw new Error('No checkout URL provided by Pesapal');
-      }
-
-    } catch (error) {
-      setError(error.message || 'Pesapal payment error');
+  try {
+    if (!checkoutForm.email || !checkoutForm.firstName || !checkoutForm.lastName) {
+      setError('Please fill in all required fields (First Name, Last Name, Email)');
       setOrderLoading(false);
+      return;
     }
-  };
+
+    const response = await fetch('/api/pesapal/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount: cartTotal,
+        currency: 'USD',
+        email: checkoutForm.email,
+        firstName: checkoutForm.firstName,
+        lastName: checkoutForm.lastName,
+        orderId: `order-${Date.now()}`,
+        cartItems: cart.map(item => ({
+          variantId: item.variantId,
+          quantity: item.quantity
+        })),
+        shippingAddress: {
+          address: checkoutForm.address,
+          city: checkoutForm.city,
+          state: checkoutForm.state,
+          zip: checkoutForm.zip,
+          countryCode: checkoutForm.country
+        }
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || 'Pesapal payment initialization failed');
+    }
+
+    if (data.redirectUrl) {
+      window.location.href = data.redirectUrl;
+    } else {
+      throw new Error('No checkout URL provided by Pesapal');
+    }
+
+  } catch (error) {
+    setError(error.message || 'Pesapal payment error');
+    setOrderLoading(false);
+  }
+};
 
   return (
     <div style={{ minHeight: '100vh' }}>
