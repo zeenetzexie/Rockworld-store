@@ -158,3 +158,28 @@ export default function SuccessPage() {
 
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', flexDirection: 'column' }}>
+<a href="/" style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              gap: '8px', padding: '14px 28px', background: '#1a1a1a', color: 'white',
+              textDecoration: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '16px'
+            }}>
+              <Home size={18} /> Back to Shop
+            </a>
+            <a href="/" style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              gap: '8px', padding: '14px 28px', background: 'transparent', color: '#1a1a1a',
+              textDecoration: 'none', borderRadius: '8px', fontWeight: '700',
+              border: '2px solid #1a1a1a', fontSize: '16px'
+            }}>
+              <Package size={18} /> Continue Shopping
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <footer style={{ background: '#1a1a2e', color: 'white', padding: '60px 20px 30px', marginTop: '60px', textAlign: 'center' }}>
+        <p style={{ margin: 0, opacity: 0.8 }}>© {new Date().getFullYear()} ROCKWORLD. All rights reserved.</p>
+      </footer>
+    </div>
+  );
+}
