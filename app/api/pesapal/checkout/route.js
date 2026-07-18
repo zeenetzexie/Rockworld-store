@@ -1,9 +1,6 @@
 export async function POST(request) {
   try {
-    const { 
-      amount, currency, email, firstName, lastName, orderId,
-      cartItems, shippingAddress  // ← add these two
-    } = await request.json();
+    const { amount, currency, email, firstName, lastName, orderId, cartItems, shippingAddress } = await request.json();
 
     if (!amount || amount <= 0) {
       return Response.json({ error: 'Invalid amount' }, { status: 400 });
@@ -19,10 +16,7 @@ export async function POST(request) {
 
     const origin = request.headers.get('origin') || 'https://rockworld-store.vercel.app';
     const paymentId = orderId || `ROCKWORLD-${Date.now()}`;
-
-    // Encode cart + shipping into callback URL so /success can use it
     const orderPayload = encodeURIComponent(JSON.stringify({ cartItems, shippingAddress, email, firstName, lastName }));
-
     const apiBase = 'https://pay.pesapal.com/v3/api';
 
     const tokenRes = await fetch(`${apiBase}/Auth/RequestToken`, {
@@ -31,8 +25,12 @@ export async function POST(request) {
       body: JSON.stringify({ consumer_key: consumerKey, consumer_secret: consumerSecret })
     });
 
-    if (!tokenRes.ok) throw new Error(`Token fetch failed: ${await tokenRes.text()}`);
-    const { token } = await tokenRes.json();
+    if (!tokenRes.ok) {
+      throw new Error(`Token fetch failed: ${await tokenRes.text()}`);
+    }
+
+    const tokenData = await tokenRes.json();
+    const token = tokenData.token;
 
     const orderRes = await fetch(`${apiBase}/Transactions/SubmitOrderRequest`, {
       method: 'POST',
@@ -46,7 +44,6 @@ export async function POST(request) {
         currency: currency || 'USD',
         amount: parseFloat(amount.toFixed(2)),
         description: 'ROCKWORLD Purchase',
-        // ✅ carry order data in the callback URL
         callback_url: `${origin}/success?payment=pesapal&ref=${paymentId}&order=${orderPayload}`,
         cancellation_url: `${origin}/`,
         notification_id: ipnId,
@@ -58,18 +55,16 @@ export async function POST(request) {
       })
     });
 
-    if (!orderRes.ok) {
-  const err = await orderRes.text();
-  throw new Error(`Order submission failed: ${err}`);
-}
-
-const orderData = await orderRes.json();
-console.log('Pesapal order response:', JSON.stringify(orderData));
-
-if (!orderData.redirect_url) {
-  throw new Error(`No redirect URL. Pesapal response: ${JSON.stringify(orderData)}`);
-}`);
     const orderData = await orderRes.json();
+    console.log('Pesapal order response:', JSON.stringify(orderData));
+
+    if (!orderRes.ok) {
+      throw new Error(`Order submission failed: ${JSON.stringify(orderData)}`);
+    }
+
+    if (!orderData.redirect_url) {
+      throw new Error(`No redirect URL. Pesapal response: ${JSON.stringify(orderData)}`);
+    }
 
     return Response.json({
       success: true,
