@@ -58,7 +58,17 @@ export async function POST(request) {
       })
     });
 
-    if (!orderRes.ok) throw new Error(`Order submission failed: ${await orderRes.text()}`);
+    if (!orderRes.ok) {
+  const err = await orderRes.text();
+  throw new Error(`Order submission failed: ${err}`);
+}
+
+const orderData = await orderRes.json();
+console.log('Pesapal order response:', JSON.stringify(orderData));
+
+if (!orderData.redirect_url) {
+  throw new Error(`No redirect URL. Pesapal response: ${JSON.stringify(orderData)}`);
+}`);
     const orderData = await orderRes.json();
 
     return Response.json({
