@@ -163,6 +163,41 @@ export default function StorePage() {
   }
 };
 
+  const handlePayPalCheckout = async () => {
+  setOrderLoading(true);
+  setError(null);
+
+  try {
+    const response = await fetch('/api/paypal/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items: cart.map(item => ({
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          variantName: item.variant
+        }))
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.orderId) {
+      throw new Error(data.error || 'Failed to create PayPal order');
+    }
+
+    // Load PayPal and redirect to approval
+    const approvalRes = await fetch(`https://api-m.sandbox.paypal.com/v2/checkout/orders/${data.orderId}`);
+    
+    // Redirect to PayPal checkout
+    window.location.href = `https://www.sandbox.paypal.com/checkoutnow?token=${data.orderId}`;
+
+  } catch (error) {
+    setError(error.message || 'PayPal error');
+    setOrderLoading(false);
+  }
+};
   return (
     <div style={{ minHeight: '100vh' }}>
       <style>{`
@@ -1099,7 +1134,7 @@ export default function StorePage() {
         </>
       )}
 
-      {/* Checkout Modal - PESAPAL ONLY */}
+      {/* Checkout Modal - PESAPAL */}
       {isCheckoutOpen && (
         <>
           <div
@@ -1434,6 +1469,62 @@ export default function StorePage() {
                       </>
                     )}
                   </button>
+
+                    {/* PayPal Button */}
+<button
+  type="button"
+  onClick={handlePayPalCheckout}
+  disabled={orderLoading}
+  style={{
+    width: '100%',
+    padding: '18px',
+    background: orderLoading ? '#ccc' : '#FFC439',
+    color: '#003087',
+    border: 'none',
+    borderRadius: '4px',
+    fontSize: '14px',
+    fontWeight: '700',
+    cursor: orderLoading ? 'not-allowed' : 'pointer',
+    transition: 'all 0.3s',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '12px',
+    letterSpacing: '1px',
+    textTransform: 'uppercase',
+    marginTop: '12px'
+  }}
+  onMouseEnter={(e) => {
+    if (!orderLoading) {
+      e.currentTarget.style.background = '#f0b429';
+      e.currentTarget.style.transform = 'translateY(-2px)';
+      e.currentTarget.style.boxShadow = '0 4px 12px rgba(255,196,57,0.4)';
+    }
+  }}
+  onMouseLeave={(e) => {
+    if (!orderLoading) {
+      e.currentTarget.style.background = '#FFC439';
+      e.currentTarget.style.transform = 'translateY(0)';
+      e.currentTarget.style.boxShadow = 'none';
+    }
+  }}
+>
+  {orderLoading ? (
+    <>
+      <Loader size={20} style={{animation: 'spin 1s linear infinite'}} />
+      Processing...
+    </>
+  ) : (
+    <>
+      <img 
+        src="https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_37x23.jpg" 
+        alt="PayPal" 
+        style={{ height: '20px', borderRadius: '3px' }}
+      />
+      Pay with PayPal (${cartTotal.toFixed(2)})
+    </>
+  )}
+</button>
                 </div>
               </form>
             </div>
