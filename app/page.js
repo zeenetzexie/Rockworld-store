@@ -191,7 +191,11 @@ export default function StorePage() {
     const approvalRes = await fetch(`https://api-m.sandbox.paypal.com/v2/checkout/orders/${data.orderId}`);
     
     // Redirect to PayPal checkout
-    window.location.href = `https://www.sandbox.paypal.com/checkoutnow?token=${data.orderId}`;
+if (data.approveUrl) {
+  window.location.href = data.approveUrl;
+} else {
+  throw new Error('No PayPal approval URL received');
+}`;
 
   } catch (error) {
     setError(error.message || 'PayPal error');
