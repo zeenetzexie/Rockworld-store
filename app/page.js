@@ -195,7 +195,7 @@ if (data.approveUrl) {
   window.location.href = data.approveUrl;
 } else {
   throw new Error('No PayPal approval URL received');
-}`;
+};
 
   } catch (error) {
     setError(error.message || 'PayPal error');
