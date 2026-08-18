@@ -6,7 +6,7 @@ const PAYPAL_API_BASE = process.env.PAYPAL_MODE === 'live'
 
 async function getAccessToken() {
   try {
-    const clientId = process.env.PAYPAL_CLIENT_ID;
+    const clientId = process.env.PAYPAL_CLIENT_ID || process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
     const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
@@ -107,6 +107,8 @@ export async function POST(request) {
 
     const accessToken = await getAccessToken();
 
+    const origin = request.headers.get('origin') || 'https://rockworld-store.vercel.app';
+
     const orderPayload = {
       intent: 'CAPTURE',
       purchase_units: [{
@@ -126,8 +128,8 @@ export async function POST(request) {
         brand_name: 'ROCKWORLD',
         landing_page: 'NO_PREFERENCE',
         user_action: 'PAY_NOW',
-        return_url: `${request.headers.get('origin')}/success`,
-        cancel_url: `${request.headers.get('origin')}/?canceled=true`,
+        return_url: `${origin}/success`,
+        cancel_url: `${origin}/?canceled=true`,
       },
     };
 
@@ -148,7 +150,13 @@ export async function POST(request) {
       throw new Error(errorMessage);
     }
 
-    return NextResponse.json({ orderId: orderData.id });
+    // Find the approve link to redirect customer to PayPal
+    const approveLink = orderData.links?.find(link => link.rel === 'approve');
+
+    return NextResponse.json({ 
+      orderId: orderData.id,
+      approveUrl: approveLink?.href
+    });
     
   } catch (error) {
     console.error('Create order error:', error);
