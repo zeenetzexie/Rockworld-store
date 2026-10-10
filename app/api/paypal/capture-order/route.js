@@ -20,18 +20,21 @@ async function getAccessToken() {
   return data.access_token;
 }
 
-export async function POST(request) {
+export async function POST(request, { params }) {
   try {
-    const { orderID } = await request.json();
+    const { orderID } = params;
     const accessToken = await getAccessToken();
 
-    const response = await fetch(`${PAYPAL_API_BASE}/v2/checkout/orders/${orderID}/capture`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
+    const response = await fetch(
+      `${PAYPAL_API_BASE}/v2/checkout/orders/${orderID}/capture`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
 
     const data = await response.json();
     return NextResponse.json(data);
