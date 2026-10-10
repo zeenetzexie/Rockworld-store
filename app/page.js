@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Plus, Minus, X, Package, CreditCard, Loader } from 'lucide-react';
+import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 
 // Initialize Stripe only if key exists
 let stripePromise = null;
@@ -159,39 +160,6 @@ export default function StorePage() {
 
   } catch (error) {
     setError(error.message || 'Pesapal payment error');
-    setOrderLoading(false);
-  }
-};
-
-  const handlePayPalCheckout = async () => {
-  setOrderLoading(true);
-  setError(null);
-
-  try {
-    // Step 1: Create order on server
-    const response = await fetch('/api/paypal/create-order', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        cart: cart.map(item => ({
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-        }))
-      })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok || !data.id) {
-      throw new Error(data.error || 'Failed to create PayPal order');
-    }
-
-    // Step 2: Redirect to PayPal approval page
-    window.location.href = `https://www.sandbox.paypal.com/checkoutnow?token=${data.id}`;
-
-  } catch (error) {
-    setError(error.message || 'PayPal error');
     setOrderLoading(false);
   }
 };
@@ -1467,60 +1435,74 @@ export default function StorePage() {
                     )}
                   </button>
 
-                    {/* PayPal Button */}
-<button
-  type="button"
-  onClick={handlePayPalCheckout}
-  disabled={orderLoading}
-  style={{
-    width: '100%',
-    padding: '18px',
-    background: orderLoading ? '#ccc' : '#FFC439',
-    color: '#003087',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '14px',
-    fontWeight: '700',
-    cursor: orderLoading ? 'not-allowed' : 'pointer',
-    transition: 'all 0.3s',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '12px',
-    letterSpacing: '1px',
-    textTransform: 'uppercase',
-    marginTop: '12px'
-  }}
-  onMouseEnter={(e) => {
-    if (!orderLoading) {
-      e.currentTarget.style.background = '#f0b429';
-      e.currentTarget.style.transform = 'translateY(-2px)';
-      e.currentTarget.style.boxShadow = '0 4px 12px rgba(255,196,57,0.4)';
-    }
-  }}
-  onMouseLeave={(e) => {
-    if (!orderLoading) {
-      e.currentTarget.style.background = '#FFC439';
-      e.currentTarget.style.transform = 'translateY(0)';
-      e.currentTarget.style.boxShadow = 'none';
-    }
-  }}
->
-  {orderLoading ? (
-    <>
-      <Loader size={20} style={{animation: 'spin 1s linear infinite'}} />
-      Processing...
-    </>
-  ) : (
-    <>
-      <img 
-        src="https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_37x23.jpg" 
-        alt="PayPal" 
-        style={{ height: '20px', borderRadius: '3px' }}
-      />
-      Pay with PayPal (${cartTotal.toFixed(2)})
-    </>
-  )}
+                    {/* PayPal Buttons */}
+<div style={{ marginTop: '12px' }}>
+  <PayPalScriptProvider options={{
+    'client-id': process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID,
+    currency: 'USD',
+    'buyer-country': 'US',
+    components: 'buttons',
+    intent: 'capture'
+  }}>
+    <PayPalButtons
+      style={{
+        shape: 'rect',
+        layout: 'vertical',
+        color: 'gold',
+        label: 'paypal'
+      }}
+      disabled={orderLoading}
+      createOrder={async () => {
+        try {
+          const response = await fetch('/api/paypal/create-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              cart: cart.map(item => ({
+                name: item.name,
+                price: item.price,
+                quantity: item.quantity
+              }))
+            })
+          });
+          const data = await response.json();
+          if (data.id) return data.id;
+          throw new Error(data.error || 'Failed to create order');
+        } catch (error) {
+          setError(error.message);
+        }
+      }}
+      onApprove={async (data, actions) => {
+        try {
+          const response = await fetch(
+            `/api/paypal/capture-order/${data.orderID}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            }
+          );
+          const orderData = await response.json();
+          const errorDetail = orderData?.details?.[0];
+
+          if (errorDetail?.issue === 'INSTRUMENT_DECLINED') {
+            return actions.restart();
+          } else if (errorDetail) {
+            throw new Error(`${errorDetail.description}`);
+          } else {
+            // Success — redirect to success page
+            window.location.href = '/success?payment=paypal';
+          }
+        } catch (error) {
+          setError(error.message);
+        }
+      }}
+      onError={(err) => {
+        setError('PayPal encountered an error. Please try again.');
+        console.error('PayPal error:', err);
+      }}
+    />
+  </PayPalScriptProvider>
+</div>
 </button>
                 </div>
               </form>
