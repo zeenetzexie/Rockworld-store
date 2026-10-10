@@ -168,34 +168,27 @@ export default function StorePage() {
   setError(null);
 
   try {
+    // Step 1: Create order on server
     const response = await fetch('/api/paypal/create-order', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        items: cart.map(item => ({
+        cart: cart.map(item => ({
           name: item.name,
           price: item.price,
           quantity: item.quantity,
-          variantName: item.variant
         }))
       })
     });
 
     const data = await response.json();
 
-    if (!response.ok || !data.orderId) {
+    if (!response.ok || !data.id) {
       throw new Error(data.error || 'Failed to create PayPal order');
     }
 
-    // Load PayPal and redirect to approval
-    const approvalRes = await fetch(`https://api-m.sandbox.paypal.com/v2/checkout/orders/${data.orderId}`);
-    
-    // Redirect to PayPal checkout
-if (data.approveUrl) {
-  window.location.href = data.approveUrl;
-} else {
-  throw new Error('No PayPal approval URL received');
-};
+    // Step 2: Redirect to PayPal approval page
+    window.location.href = `https://www.sandbox.paypal.com/checkoutnow?token=${data.id}`;
 
   } catch (error) {
     setError(error.message || 'PayPal error');
