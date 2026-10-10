@@ -1,168 +1,97 @@
 import { NextResponse } from 'next/server';
 
-const PAYPAL_API_BASE = process.env.PAYPAL_MODE === 'live' 
+const PAYPAL_API_BASE = process.env.PAYPAL_MODE === 'live'
   ? 'https://api-m.paypal.com'
   : 'https://api-m.sandbox.paypal.com';
 
 async function getAccessToken() {
-  try {
-    const clientId = process.env.PAYPAL_CLIENT_ID || process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
-    const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+  const clientId = process.env.PAYPAL_CLIENT_ID || process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+  const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
 
-    if (!clientId || !clientSecret) {
-      throw new Error('PayPal credentials not configured');
-    }
-
-    const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
-
-    const response = await fetch(`${PAYPAL_API_BASE}/v1/oauth2/token`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${auth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: 'grant_type=client_credentials',
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      console.error('PayPal auth error:', error);
-      throw new Error('Failed to authenticate with PayPal');
-    }
-
-    const data = await response.json();
-    return data.access_token;
-  } catch (error) {
-    console.error('Get access token error:', error);
-    throw error;
+  if (!clientId || !clientSecret) {
+    throw new Error('PayPal credentials not configured');
   }
+
+  const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+  const response = await fetch(`${PAYPAL_API_BASE}/v1/oauth2/token`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${auth}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: 'grant_type=client_credentials',
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`PayPal auth failed: ${error}`);
+  }
+
+  const data = await response.json();
+  return data.access_token;
 }
 
 export async function POST(request) {
   try {
-    const { items } = await request.json();
+    const { cart } = await request.json();
 
-    if (!items || items.length === 0) {
+    if (!cart || cart.length === 0) {
       throw new Error('Cart is empty');
     }
 
     let total = 0;
-    const paypalItems = [];
-
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      
-      let price = 0;
-      if (item.price) {
-        price = parseFloat(item.price);
-      } else if (item.variant?.retail_price) {
-        price = parseFloat(item.variant.retail_price);
-      } else if (item.retail_price) {
-        price = parseFloat(item.retail_price);
-      }
-
-      if (isNaN(price) || price <= 0) {
-        console.error(`Invalid price for item ${i}:`, item);
-        throw new Error(`Invalid price for item: ${item.name || 'Unknown'}`);
-      }
-
-      let name = 'Product';
-      if (item.product?.name) {
-        name = item.product.name;
-      } else if (item.name) {
-        name = item.name;
-      }
-
-      if (item.variant?.name) {
-        name = `${name} - ${item.variant.name}`;
-      } else if (item.variantName) {
-        name = `${name} - ${item.variantName}`;
-      }
-
+    const items = cart.map(item => {
+      const price = parseFloat(item.price);
       const quantity = parseInt(item.quantity) || 1;
-      
-      if (quantity <= 0) {
-        throw new Error('Invalid quantity');
-      }
-
-      const itemTotal = price * quantity;
-      total += itemTotal;
-
-      const truncatedName = name.substring(0, 127);
-
-      paypalItems.push({
-        name: truncatedName,
-        description: truncatedName.substring(0, 127),
-        unit_amount: {
-          currency_code: 'USD',
-          value: price.toFixed(2),
-        },
+      total += price * quantity;
+      return {
+        name: item.name.substring(0, 127),
+        unit_amount: { currency_code: 'USD', value: price.toFixed(2) },
         quantity: quantity.toString(),
-      });
-    }
-
-    if (total <= 0 || isNaN(total)) {
-      throw new Error('Invalid cart total');
-    }
+      };
+    });
 
     const accessToken = await getAccessToken();
-
     const origin = request.headers.get('origin') || 'https://rockworld-store.vercel.app';
 
-    const orderPayload = {
-      intent: 'CAPTURE',
-      purchase_units: [{
-        amount: {
-          currency_code: 'USD',
-          value: total.toFixed(2),
-          breakdown: {
-            item_total: {
-              currency_code: 'USD',
-              value: total.toFixed(2),
-            },
-          },
-        },
-        items: paypalItems,
-      }],
-      application_context: {
-        brand_name: 'ROCKWORLD',
-        landing_page: 'NO_PREFERENCE',
-        user_action: 'PAY_NOW',
-        return_url: `${origin}/success`,
-        cancel_url: `${origin}/?canceled=true`,
-      },
-    };
-
-    const orderResponse = await fetch(`${PAYPAL_API_BASE}/v2/checkout/orders`, {
+    const response = await fetch(`${PAYPAL_API_BASE}/v2/checkout/orders`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${accessToken}`,
       },
-      body: JSON.stringify(orderPayload),
+      body: JSON.stringify({
+        intent: 'CAPTURE',
+        purchase_units: [{
+          amount: {
+            currency_code: 'USD',
+            value: total.toFixed(2),
+            breakdown: {
+              item_total: { currency_code: 'USD', value: total.toFixed(2) }
+            }
+          },
+          items,
+        }],
+        application_context: {
+          brand_name: 'ROCKWORLD',
+          landing_page: 'NO_PREFERENCE',
+          user_action: 'PAY_NOW',
+          return_url: `${origin}/success`,
+          cancel_url: `${origin}/`,
+        }
+      }),
     });
 
-    const orderData = await orderResponse.json();
+    const orderData = await response.json();
 
-    if (!orderResponse.ok || orderData.error || !orderData.id) {
-      console.error('PayPal order creation failed:', orderData);
-      const errorMessage = orderData.message || orderData.error?.message || 'Failed to create PayPal order';
-      throw new Error(errorMessage);
+    if (!response.ok || !orderData.id) {
+      throw new Error(orderData.message || 'Failed to create PayPal order');
     }
 
-    // Find the approve link to redirect customer to PayPal
-    const approveLink = orderData.links?.find(link => link.rel === 'approve');
+    return NextResponse.json({ id: orderData.id });
 
-    return NextResponse.json({ 
-      orderId: orderData.id,
-      approveUrl: approveLink?.href
-    });
-    
   } catch (error) {
     console.error('Create order error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create PayPal order' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
