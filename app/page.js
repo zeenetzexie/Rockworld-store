@@ -1504,6 +1504,7 @@ export default function StorePage() {
   </PayPalScriptProvider>
 </div>
 </button>
+</div>
                 </div>
               </form>
             </div>
