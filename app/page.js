@@ -519,11 +519,17 @@ export default function StorePage() {
                     <div style={{ flex: 1, height: '1px', background: '#e0e0e0' }} />
                   </div>
 
-                  {/* PayPal v6 */}
-<div style={{ marginTop: '4px' }}>
-  <div id="paypal-button-container" style={{ minHeight: '45px' }} />
-</div>
-  )}
+                                    {/* PayPal v6 */}
+                  <div style={{ marginTop: '4px' }}>
+                    <div id="paypal-button-container" style={{ minHeight: '45px' }} />
+                  </div>
+
+                </div>
+              </form>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Footer */}
       <footer style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%)', color: 'white', marginTop: '100px', position: 'relative', overflow: 'hidden' }}>
