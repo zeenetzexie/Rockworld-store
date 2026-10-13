@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ShoppingCart, Plus, Minus, X, Package, CreditCard, Loader } from 'lucide-react';
-import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
+
 
 export default function StorePage() {
   const [products, setProducts] = useState([]);
@@ -43,6 +43,103 @@ export default function StorePage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+  if (!isCheckoutOpen) return;
+
+  const script = document.createElement('script');
+  script.src = 'https://www.sandbox.paypal.com/web-sdk/v6/core';
+  script.async = true;
+  script.onload = async () => {
+    try {
+      const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+      const sdkInstance = await window.paypal.createInstance({
+        clientId,
+        components: ['paypal-payments'],
+      });
+
+      const eligibility = await sdkInstance.findEligibleMethods();
+      const isPayPalEligible = eligibility.isEligible('paypal');
+
+      if (isPayPalEligible) {
+        const container = document.querySelector('#paypal-button-container');
+        if (!container) return;
+        container.innerHTML = '';
+
+        const paypalButton = document.createElement('paypal-button');
+        container.append(paypalButton);
+
+        const paypalCheckoutSession =
+          await sdkInstance.createPayPalOneTimePaymentSession({
+            onApprove: async (data) => {
+              try {
+                const response = await fetch(
+                  `/api/paypal/capture-order/${data.orderID}`,
+                  { method: 'POST', headers: { 'Content-Type': 'application/json' } }
+                );
+                const orderData = await response.json();
+                const errorDetail = orderData?.details?.[0];
+                if (errorDetail?.issue === 'INSTRUMENT_DECLINED') {
+                  setError('Payment declined. Please try another card.');
+                } else if (errorDetail) {
+                  setError(errorDetail.description);
+                } else {
+                  window.location.href = '/success?payment=paypal';
+                }
+              } catch (err) {
+                setError('PayPal capture failed. Please try again.');
+              }
+            },
+            onCancel: () => {
+              setError('Payment cancelled.');
+            },
+            onError: (err) => {
+              console.error('PayPal error:', err);
+              setError('PayPal encountered an error. Please try again.');
+            },
+          });
+
+        paypalButton.addEventListener('click', async () => {
+          try {
+            const createOrderPromise = fetch('/api/paypal/create-order', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                cart: cart.map(item => ({
+                  name: item.name,
+                  price: item.price,
+                  quantity: item.quantity
+                }))
+              })
+            }).then(res => res.json()).then(data => {
+              if (!data.id) throw new Error(data.error || 'Failed to create order');
+              return { orderId: data.id };
+            });
+
+            await paypalCheckoutSession.start(
+              { presentationMode: 'auto' },
+              createOrderPromise,
+            );
+          } catch (err) {
+            setError(err.message);
+          }
+        });
+      }
+    } catch (err) {
+      console.error('PayPal SDK error:', err);
+      setError('Failed to load PayPal. Please try again.');
+    }
+  };
+
+  document.body.appendChild(script);
+
+  return () => {
+    const existing = document.querySelector(
+      'script[src="https://www.sandbox.paypal.com/web-sdk/v6/core"]'
+    );
+    if (existing) existing.remove();
+  };
+}, [isCheckoutOpen, cart]);
 
   const addToCart = (product, variant) => {
     const cartItem = {
@@ -422,67 +519,11 @@ export default function StorePage() {
                     <div style={{ flex: 1, height: '1px', background: '#e0e0e0' }} />
                   </div>
 
-                  {/* PayPal Buttons */}
-                  <div>
-                    <PayPalScriptProvider options={{
-                      'client-id': process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID,
-                      currency: 'USD',
-                      'buyer-country': 'US',
-                      components: 'buttons',
-                      intent: 'capture'
-                    }}>
-                      <PayPalButtons
-                        style={{ shape: 'rect', layout: 'vertical', color: 'gold', label: 'paypal' }}
-                        disabled={orderLoading}
-                        createOrder={async () => {
-                          try {
-                            const response = await fetch('/api/paypal/create-order', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                cart: cart.map(item => ({ name: item.name, price: item.price, quantity: item.quantity }))
-                              })
-                            });
-                            const data = await response.json();
-                            if (data.id) return data.id;
-                            throw new Error(data.error || 'Failed to create order');
-                          } catch (error) {
-                            setError(error.message);
-                          }
-                        }}
-                        onApprove={async (data, actions) => {
-                          try {
-                            const response = await fetch(`/api/paypal/capture-order/${data.orderID}`, {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' }
-                            });
-                            const orderData = await response.json();
-                            const errorDetail = orderData?.details?.[0];
-                            if (errorDetail?.issue === 'INSTRUMENT_DECLINED') {
-                              return actions.restart();
-                            } else if (errorDetail) {
-                              throw new Error(errorDetail.description);
-                            } else {
-                              window.location.href = '/success?payment=paypal';
-                            }
-                          } catch (error) {
-                            setError(error.message);
-                          }
-                        }}
-                        onError={(err) => {
-                          setError('PayPal encountered an error. Please try again.');
-                          console.error('PayPal error:', err);
-                        }}
-                      />
-                    </PayPalScriptProvider>
-                  </div>
-
-                </div>
-              </form>
-            </div>
-          </div>
-        </>
-      )}
+                  {/* PayPal v6 */}
+<div style={{ marginTop: '4px' }}>
+  <div id="paypal-button-container" style={{ minHeight: '45px' }} />
+</div>
+  )}
 
       {/* Footer */}
       <footer style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%)', color: 'white', marginTop: '100px', position: 'relative', overflow: 'hidden' }}>
