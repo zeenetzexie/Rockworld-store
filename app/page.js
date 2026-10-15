@@ -52,7 +52,7 @@ export default function StorePage() {
   script.async = true;
   script.onload = async () => {
     try {
-      const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+      const clientId = 'BAA65p2GnyiTUQXksGSriiCTnZ0b7MhzgRKiAg4ukHMcnudteo-yfKPOM7ceglI4j3sVum2dce6xcbuG5g';
       const sdkInstance = await window.paypal.createInstance({
         clientId,
         components: ['paypal-payments'],
