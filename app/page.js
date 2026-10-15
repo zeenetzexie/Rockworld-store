@@ -48,7 +48,9 @@ export default function StorePage() {
   if (!isCheckoutOpen) return;
 
   const script = document.createElement('script');
-  script.src = 'https://www.sandbox.paypal.com/web-sdk/v6/core';
+  script.src = process.env.PAYPAL_MODE === 'live' 
+  ? 'https://www.paypal.com/web-sdk/v6/core'
+  : 'https://www.sandbox.paypal.com/web-sdk/v6/core';
   script.async = true;
   script.onload = async () => {
     try {
